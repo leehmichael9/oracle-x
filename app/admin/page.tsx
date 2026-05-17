@@ -178,6 +178,15 @@ export default function AdminPage() {
 
       const paidCount = await settleWinners(marketId, result);
       setSettleMessage(`정산 완료! ${paidCount}명에게 포인트 지급`);
+      // 채널 알림 발송
+const market = markets.find((m: any) => m.id === marketId)
+if (market) {
+  await fetch('/api/notify', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ question: market.question, result }),
+  })
+}
       await loadMarkets();
     } catch (err) {
       setResolveError(
