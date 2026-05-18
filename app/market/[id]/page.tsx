@@ -16,7 +16,7 @@ type Market = {
   category: string;
   yes_percent: number;
   no_percent: number;
-  resolved: boolean;
+  status: string;
   result: 'YES' | 'NO' | null;
 };
 
@@ -196,7 +196,7 @@ export default function MarketBetPage() {
         <h1 className="text-xl font-semibold text-white text-center leading-snug">
           {market.question}
         </h1>
-        {market.resolved && (
+        {market.status === 'resolved' && (
   <div className={`flex items-center justify-center gap-2 py-2 px-4 rounded-xl font-bold text-sm ${
     market.result === 'YES'
       ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
@@ -206,7 +206,7 @@ export default function MarketBetPage() {
     <span className="font-normal ml-1">— 마켓 종료</span>
   </div>
 )}
-{market.resolved ? (
+{market.status === 'resolved' ? (
   <p className="text-center text-gray-500 text-sm py-4 border border-white/10 rounded-xl">
     이 마켓은 종료되었습니다. 베팅이 불가합니다.
   </p>
