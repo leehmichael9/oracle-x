@@ -10,6 +10,8 @@ type Market = {
   category: string;
   yes_percent: number;
   no_percent: number;
+  resolved: boolean;
+  result: 'YES' | 'NO' | null;
 };
 
 export default function Home() {
@@ -74,6 +76,15 @@ export default function Home() {
                 <div className="bg-emerald-500" style={{ width: `${m.yes_percent}%` }}></div>
                 <div className="bg-red-500" style={{ width: `${m.no_percent}%` }}></div>
               </div>
+              {m.resolved && (
+  <div className={`text-xs font-bold px-2 py-1 rounded-lg text-center mt-1 ${
+    m.result === 'YES'
+      ? 'bg-emerald-500/20 text-emerald-400'
+      : 'bg-red-500/20 text-red-400'
+  }`}>
+    {m.result === 'YES' ? '✅ 종료 · YES' : '❌ 종료 · NO'}
+  </div>
+)}
             </Link>
           ))}
         </div>
