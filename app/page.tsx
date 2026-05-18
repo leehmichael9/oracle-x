@@ -15,6 +15,7 @@ type Market = {
 export default function Home() {
   const [markets, setMarkets] = useState<Market[]>([]);
   const [loading, setLoading] = useState(true);
+  const [points, setPoints] = useState<number | null>(null);
   const { userId, loading: userLoading } = useTelegramUser();
 
   useEffect(() => {
@@ -25,11 +26,29 @@ export default function Home() {
     }
     load();
   }, []);
+  useEffect(() => {
+    if (!userId) return;
+    async function loadPoints() {
+      const { data } = await supabase
+        .from('users')
+        .select('points')
+        .eq('id', userId)
+        .single();
+      if (data) setPoints(data.points ?? 0);
+    }
+    loadPoints();
+  }, [userId]);
 
   return (
     <div className="min-h-screen bg-[#0a0f1e] flex flex-col items-center py-4 px-4">
       <h1 className="text-4xl font-bold text-white tracking-widest mb-2">ORACLE-X</h1>
       <p className="text-gray-400 mb-3">Asia's Crypto Prediction Market</p>
+      {userId && points !== null && (
+  <div className="bg-[#111827] border border-emerald-500/30 rounded-xl px-5 py-3 mb-4 flex items-center justify-between w-full max-w-xl">
+    <span className="text-gray-400 text-sm">💰 보유 포인트</span>
+    <span className="text-emerald-400 font-bold text-lg">{points.toLocaleString()} P</span>
+  </div>
+)}
       <Link
         href="/leaderboard"
         className="mb-4 px-5 py-2.5 rounded-xl text-sm font-semibold border border-white/15 text-white bg-[#111827] hover:bg-[#151d32] hover:border-white/25 transition-all"
