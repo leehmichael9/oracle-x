@@ -111,7 +111,7 @@ export default function MarketBetPage() {
       const { data: userRow, error: userErr } = await supabase
         .from('users')
         .select('points')
-        .eq('id', TEST_USER_ID)
+        .eq('id', userId ?? '')
         .maybeSingle();
 
       if (userErr || userRow?.points == null) {
