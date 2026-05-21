@@ -4,9 +4,9 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import { useTelegramUser } from '@/lib/useTelegramUser';
 
 // test_user_001 (telegram_id) — Supabase users.id
-const TEST_USER_ID = '423a93c7-360e-419f-8fe8-c6a6840f578e';
 const MIN_BET = 10;
 const MAX_BET = 500;
 
@@ -25,6 +25,7 @@ type Choice = 'YES' | 'NO';
 export default function MarketBetPage() {
   const params = useParams();
   const idParam = params.id as string;
+  const { userId } = useTelegramUser();
 
   const [market, setMarket] = useState<Market | null>(null);
   const [marketLoading, setMarketLoading] = useState(true);
@@ -41,7 +42,7 @@ export default function MarketBetPage() {
     const { data, error: balanceErr } = await supabase
       .from('users')
       .select('points')
-      .eq('id', TEST_USER_ID)
+      .eq('id', userId ?? '')
       .maybeSingle();
     if (!balanceErr && data) {
       setBalance(data.points);
@@ -86,6 +87,10 @@ export default function MarketBetPage() {
     setError(null);
     setSuccess(false);
 
+    if (!userId) {
+      setError('로그인 정보를 확인할 수 없습니다.');
+      return;
+    }
     if (!choice) {
       setError('YES 또는 NO를 선택해 주세요.');
       return;
@@ -123,7 +128,7 @@ export default function MarketBetPage() {
       const { error: insertErr } = await supabase.from('bets').insert({
         choice,
         amount: pointsNum,
-        user_id: TEST_USER_ID,
+        user_id: userId ?? '',
         market_id: marketId,
       });
 
@@ -136,8 +141,7 @@ export default function MarketBetPage() {
       const { error: updateErr } = await supabase
         .from('users')
         .update({ points: newBalance })
-        .eq('id', TEST_USER_ID);
-
+        .eq('id', userId ?? '');
       if (updateErr) {
         setError(updateErr.message ?? '포인트 차감에 실패했습니다.');
         return;
@@ -196,6 +200,20 @@ export default function MarketBetPage() {
         <h1 className="text-xl font-semibold text-white text-center leading-snug">
           {market.question}
         </h1>
+        </h1>
+            {/* 현재 배당률 */}
+            <div className="w-full mt-3">
+              <div className="flex justify-between text-xs font-medium mb-1">
+                <span className="text-emerald-400">YES {market.yes_percent}%</span>
+                <span className="text-red-400">NO {market.no_percent}%</span>
+              </div>
+              <div className="w-full h-2 rounded-full overflow-hidden bg-red-900/40">
+                <div
+                  className="h-full bg-emerald-500 rounded-full transition-all"
+                  style={{ width: `${market.yes_percent}%` }}
+                />
+              </div>
+            </div>
         {market.status === 'resolved' && (
   <div className={`flex items-center justify-center gap-2 py-2 px-4 rounded-xl font-bold text-sm ${
     market.result === 'YES'
