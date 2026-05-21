@@ -109,6 +109,18 @@ export default function MarketBetPage() {
 
     setSubmitting(true);
     try {
+      // 중복 베팅 체크
+const { data: existingBet } = await supabase
+.from('bets')
+.select('id')
+.eq('user_id', userId ?? '')
+.eq('market_id', marketId)
+.maybeSingle();
+
+if (existingBet) {
+setError('이미 이 마켓에 베팅하셨습니다.');
+return;
+}
       const { data: userRow, error: userErr } = await supabase
         .from('users')
         .select('points')
