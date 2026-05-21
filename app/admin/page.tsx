@@ -201,6 +201,22 @@ if (market) {
       setResolvingId(null);
     }
   }
+  async function handleDelete(marketId: number, question: string) {
+    if (!window.confirm(`마켓을 삭제하시겠습니까?\n\n"${question}"\n\n이 작업은 되돌릴 수 없습니다.`)) return
+
+    // 관련 베팅 먼저 삭제
+    await supabase.from('bets').delete().eq('market_id', marketId)
+
+    // 마켓 삭제
+    const { error } = await supabase.from('markets').delete().eq('id', marketId)
+
+    if (error) {
+      alert('마켓 삭제에 실패했습니다: ' + error.message)
+      return
+    }
+
+    await loadMarkets()
+  }
 
   return (
     <div className="min-h-screen bg-[#0a0f1e] flex flex-col items-center py-12 px-4">
@@ -382,6 +398,15 @@ if (market) {
                     </button>
                   </div>
                 ) : null}
+                <div className="pt-2 border-t border-white/10">
+              <button
+                type="button"
+                onClick={() => handleDelete(m.id, m.question)}
+                className="w-full py-1.5 rounded-lg text-xs font-medium text-red-400 border border-red-900/50 hover:bg-red-950/50 transition-colors"
+              >
+                🗑️ 마켓 삭제
+              </button>
+            </div>
               </div>
             ))}
           </div>
