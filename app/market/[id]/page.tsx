@@ -146,7 +146,11 @@ return;
       });
 
       if (insertErr) {
-        setError(insertErr.message ?? '베팅 저장에 실패했습니다.');
+        if (insertErr.message?.includes('duplicate key')) {
+          setError('이미 이 마켓에 베팅하셨습니다.');
+        } else {
+          setError(insertErr.message ?? '베팅 저장에 실패했습니다.');
+        }
         return;
       }
 
