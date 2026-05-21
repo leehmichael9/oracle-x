@@ -200,7 +200,7 @@ export default function MarketBetPage() {
         <h1 className="text-xl font-semibold text-white text-center leading-snug">
           {market.question}
         </h1>
-        </h1>
+        
             {/* 현재 배당률 */}
             <div className="w-full mt-3">
               <div className="flex justify-between text-xs font-medium mb-1">
