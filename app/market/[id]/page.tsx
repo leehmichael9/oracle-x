@@ -38,6 +38,7 @@ export default function MarketBetPage() {
   const [success, setSuccess] = useState(false);
 
   const loadBalance = useCallback(async () => {
+    if (!userId) return   // 
     setBalanceLoading(true);
     const { data, error: balanceErr } = await supabase
       .from('users')
@@ -50,7 +51,7 @@ export default function MarketBetPage() {
       setBalance(null);
     }
     setBalanceLoading(false);
-  }, []);
+  }, [userId]);
 
   const loadMarket = useCallback(async () => {
     setMarketLoading(true);
