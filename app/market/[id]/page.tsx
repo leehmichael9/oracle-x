@@ -109,63 +109,26 @@ export default function MarketBetPage() {
 
     setSubmitting(true);
     try {
-      // 중복 베팅 체크
-const { data: existingBet } = await supabase
-.from('bets')
-.select('id')
-.eq('user_id', userId ?? '')
-.eq('market_id', marketId)
-.maybeSingle();
-
-if (existingBet) {
-setError('이미 이 마켓에 베팅하셨습니다.');
-return;
-}
-      const { data: userRow, error: userErr } = await supabase
-        .from('users')
-        .select('points')
-        .eq('id', userId ?? '')
-        .maybeSingle();
-
-      if (userErr || userRow?.points == null) {
-        setError('테스트 사용자를 찾을 수 없습니다.');
-        return;
-      }
-
-      const currentPoints = userRow.points;
-      if (pointsNum > currentPoints) {
-        setError('포인트가 부족합니다');
-        return;
-      }
-
-      const { error: insertErr } = await supabase.from('bets').insert({
-        choice,
-        amount: pointsNum,
-        user_id: userId ?? '',
-        market_id: marketId,
+      const { data, error: rpcErr } = await supabase.rpc('place_bet', {
+        p_user_id:   userId,
+        p_market_id: marketId,
+        p_choice:    choice,
+        p_amount:    pointsNum,
       });
-
-      if (insertErr) {
-        if (insertErr.message?.includes('duplicate key')) {
-          setError('이미 이 마켓에 베팅하셨습니다.');
-        } else {
-          setError(insertErr.message ?? '베팅 저장에 실패했습니다.');
-        }
+    
+      if (rpcErr) {
+        setError('오류가 발생했습니다. 다시 시도해주세요.');
         return;
       }
-
-      const newBalance = currentPoints - pointsNum;
-      const { error: updateErr } = await supabase
-        .from('users')
-        .update({ points: newBalance })
-        .eq('id', userId ?? '');
-      if (updateErr) {
-        setError(updateErr.message ?? '포인트 차감에 실패했습니다.');
+    
+      if (!data.success) {
+        setError(data.error);
         return;
       }
-
-      setBalance(newBalance);
+    
+      setBalance(data.remaining_points);
       setSuccess(true);
+      loadMarket();
     } finally {
       setSubmitting(false);
     }
