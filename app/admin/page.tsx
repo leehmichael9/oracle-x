@@ -22,11 +22,6 @@ type Market = {
   result: string | null;
 };
 
-type BetRow = {
-  user_id: string;
-  choice: string;
-  amount: number;
-};
 
 export default function AdminPage() {
   const [markets, setMarkets] = useState<Market[]>([]);
@@ -113,85 +108,39 @@ export default function AdminPage() {
     }
   }
 
-  async function settleWinners(marketId: number, result: 'YES' | 'NO') {
-    const { data: allBets, error: betsErr } = await supabase
-      .from('bets')
-      .select('user_id, choice, amount')
-      .eq('market_id', marketId);
-
-    if (betsErr) {
-      throw new Error(betsErr.message ?? '베팅 조회에 실패했습니다.');
-    }
-
-    const bets = (allBets as BetRow[]) ?? [];
-    const totalPool = bets.reduce((sum, b) => sum + b.amount, 0);
-    const winningBets = bets.filter((b) => b.choice === result);
-    const winningPool = winningBets.reduce((sum, b) => sum + b.amount, 0);
-
-    const payoutByUser = new Map<string, number>();
-
-    if (winningPool > 0) {
-      for (const bet of winningBets) {
-        const payout = Math.floor((bet.amount / winningPool) * totalPool);
-        if (payout > 0) {
-          payoutByUser.set(
-            bet.user_id,
-            (payoutByUser.get(bet.user_id) ?? 0) + payout,
-          );
-        }
-      }
-    }
-
-    for (const [userId, payout] of payoutByUser) {
-      const { data: userRow, error: userErr } = await supabase
-        .from('users')
-        .select('points')
-        .eq('id', userId)
-        .maybeSingle();
-
-      if (userErr || userRow?.points == null) {
-        throw new Error('승리자 포인트 지급에 실패했습니다.');
-      }
-
-      const { error: updateErr } = await supabase
-        .from('users')
-        .update({ points: userRow.points + payout })
-        .eq('id', userId);
-
-      if (updateErr) {
-        throw new Error(updateErr.message ?? '승리자 포인트 지급에 실패했습니다.');
-      }
-    }
-
-    return payoutByUser.size;
-  }
-
+  
   async function handleResolve(marketId: number, result: 'YES' | 'NO') {
     setResolvingId(marketId);
     setSettleMessage(null);
     setResolveError(null);
     try {
-      const { error: marketErr } = await supabase
-        .from('markets')
-        .update({ status: 'resolved', result })
-        .eq('id', marketId);
+      const { data, error } = await supabase.rpc('settle_market', {
+        p_market_id: marketId,
+        p_result: result,
+      });
 
-      if (marketErr) {
-        setResolveError(marketErr.message ?? '마켓 결과 저장에 실패했습니다.');
+      if (error) {
+        setResolveError(error.message ?? '정산 처리에 실패했습니다.');
         return;
       }
 
-      const paidCount = await settleWinners(marketId, result);
-      setSettleMessage(`정산 완료! ${paidCount}명에게 포인트 지급`);
-      // 채널 알림 발송
-const market = markets.find((m: any) => m.id === marketId)
-if (market) {
-  await fetch('/api/notify', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ question: market.question, result }),
-  })
-}
+      if (!data.success) {
+        setResolveError(data.error);
+        return;
+      }
+
+      setSettleMessage(
+        `정산 완료! ${data.settled_count}명에게 포인트 지급 (총 풀: ${data.total_pool}P)`
+      );
+
+      const market = markets.find((m) => m.id === marketId);
+      if (market) {
+        await fetch('/api/notify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question: market.question, result }),
+        });
+      }
       await loadMarkets();
     } catch (err) {
       setResolveError(
