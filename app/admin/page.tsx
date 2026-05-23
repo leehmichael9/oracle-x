@@ -2,15 +2,8 @@
 
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
+import { MARKET_CATEGORIES } from '@/lib/categories';
 import { supabase } from '@/lib/supabase';
-
-const CATEGORIES = [
-  'XRP특화',
-  '크립토가격',
-  '거시경제',
-  '지정학',
-  '크립토산업',
-] as const;
 
 type Market = {
   id: number;
@@ -29,7 +22,11 @@ export default function AdminPage() {
   const [resolvingId, setResolvingId] = useState<number | null>(null);
 
   const [question, setQuestion] = useState('');
-  const [category, setCategory] = useState<string>(CATEGORIES[0]);
+  const [category, setCategory] = useState<string>(MARKET_CATEGORIES[0]);
+  const [editingCategoryId, setEditingCategoryId] = useState<number | null>(null);
+  const [editCategory, setEditCategory] = useState<string>(MARKET_CATEGORIES[0]);
+  const [savingCategoryId, setSavingCategoryId] = useState<number | null>(null);
+  const [categoryEditError, setCategoryEditError] = useState<string | null>(null);
   const [yesPercent, setYesPercent] = useState('');
   const [noPercent, setNoPercent] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
@@ -93,7 +90,7 @@ export default function AdminPage() {
       }
 
       setQuestion('');
-      setCategory(CATEGORIES[0]);
+      setCategory(MARKET_CATEGORIES[0]);
       setYesPercent('');
       setNoPercent('');
       setFormSuccess(true);
@@ -167,6 +164,38 @@ export default function AdminPage() {
     await loadMarkets()
   }
 
+  function startCategoryEdit(market: Market) {
+    setCategoryEditError(null);
+    setEditingCategoryId(market.id);
+    setEditCategory(market.category);
+  }
+
+  function cancelCategoryEdit() {
+    setEditingCategoryId(null);
+    setCategoryEditError(null);
+  }
+
+  async function handleSaveCategory(marketId: number) {
+    setSavingCategoryId(marketId);
+    setCategoryEditError(null);
+    try {
+      const { error } = await supabase
+        .from('markets')
+        .update({ category: editCategory })
+        .eq('id', marketId);
+
+      if (error) {
+        setCategoryEditError(error.message ?? '카테고리 저장에 실패했습니다.');
+        return;
+      }
+
+      setEditingCategoryId(null);
+      await loadMarkets();
+    } finally {
+      setSavingCategoryId(null);
+    }
+  }
+
   return (
     <div className="min-h-screen bg-[#0a0f1e] flex flex-col items-center py-12 px-4">
       <p className="text-amber-400 text-sm font-medium tracking-wide mb-2">
@@ -216,7 +245,7 @@ export default function AdminPage() {
               }}
               className="w-full rounded-lg bg-[#0a0f1e] border border-white/15 px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50"
             >
-              {CATEGORIES.map((c) => (
+              {MARKET_CATEGORIES.map((c) => (
                 <option key={c} value={c}>
                   {c}
                 </option>
@@ -295,6 +324,11 @@ export default function AdminPage() {
             {resolveError}
           </p>
         ) : null}
+        {categoryEditError ? (
+          <p className="text-sm text-red-400 bg-red-950/30 border border-red-900/50 rounded-lg px-3 py-2 mb-4">
+            {categoryEditError}
+          </p>
+        ) : null}
         {listLoading ? (
           <p className="text-gray-400">로딩 중...</p>
         ) : markets.length === 0 ? (
@@ -307,10 +341,51 @@ export default function AdminPage() {
                 className="bg-[#111827] border border-white/10 rounded-xl p-5 space-y-3"
               >
                 <p className="text-white font-medium">{m.question}</p>
-                <div className="flex flex-wrap gap-2 text-xs">
-                  <span className="px-2 py-1 rounded-md bg-white/5 text-gray-300">
-                    {m.category}
-                  </span>
+                <div className="flex flex-wrap items-center gap-2 text-xs">
+                  {editingCategoryId === m.id ? (
+                    <>
+                      <select
+                        value={editCategory}
+                        onChange={(e) => setEditCategory(e.target.value)}
+                        className="rounded-md bg-[#0a0f1e] border border-white/15 px-2 py-1 text-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                      >
+                        {MARKET_CATEGORIES.map((c) => (
+                          <option key={c} value={c}>
+                            {c}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        disabled={savingCategoryId === m.id}
+                        onClick={() => handleSaveCategory(m.id)}
+                        className="px-2 py-1 rounded-md bg-emerald-600 text-white hover:bg-emerald-500 disabled:opacity-50 transition-colors"
+                      >
+                        {savingCategoryId === m.id ? '저장 중...' : '저장'}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={savingCategoryId === m.id}
+                        onClick={cancelCategoryEdit}
+                        className="px-2 py-1 rounded-md bg-white/5 text-gray-300 hover:bg-white/10 disabled:opacity-50 transition-colors"
+                      >
+                        취소
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <span className="px-2 py-1 rounded-md bg-white/5 text-gray-300">
+                        {m.category}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => startCategoryEdit(m)}
+                        className="px-2 py-1 rounded-md bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
+                      >
+                        수정
+                      </button>
+                    </>
+                  )}
                   <span
                     className={`px-2 py-1 rounded-md ${
                       m.status === 'active'

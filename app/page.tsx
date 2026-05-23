@@ -1,8 +1,12 @@
 'use client';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { MARKET_CATEGORIES } from '@/lib/categories';
 import { supabase } from '@/lib/supabase';
 import { useTelegramUser } from '@/lib/useTelegramUser';
+
+type CategoryFilter = '전체' | (typeof MARKET_CATEGORIES)[number];
+type StatusFilter = 'active' | 'resolved';
 
 type Market = {
   id: number;
@@ -18,7 +22,18 @@ export default function Home() {
   const [markets, setMarkets] = useState<Market[]>([]);
   const [loading, setLoading] = useState(true);
   const [points, setPoints] = useState<number | null>(null);
+  const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('전체');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('active');
   const { userId, loading: userLoading } = useTelegramUser();
+
+  const filteredMarkets = useMemo(() => {
+    return markets.filter((m) => {
+      if (categoryFilter !== '전체' && m.category !== categoryFilter) return false;
+      if (statusFilter === 'active' && m.status !== 'active') return false;
+      if (statusFilter === 'resolved' && m.status !== 'resolved') return false;
+      return true;
+    });
+  }, [markets, categoryFilter, statusFilter]);
 
   useEffect(() => {
     async function load() {
@@ -61,7 +76,51 @@ export default function Home() {
         <p className="text-gray-400">로딩 중...</p>
       ) : (
         <div className="flex flex-col gap-4 w-full max-w-xl">
-          {markets.map((m) => (
+          <div className="space-y-2">
+            <div className="flex flex-wrap gap-2">
+              {(['전체', ...MARKET_CATEGORIES] as CategoryFilter[]).map((cat) => (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => setCategoryFilter(cat)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                    categoryFilter === cat
+                      ? 'bg-emerald-600 text-white'
+                      : 'bg-[#111827] text-gray-400 border border-white/10 hover:text-white hover:border-white/20'
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {(
+                [
+                  { value: 'active' as const, label: '진행중' },
+                  { value: 'resolved' as const, label: '종료' },
+                ] as const
+              ).map(({ value, label }) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setStatusFilter(value)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                    statusFilter === value
+                      ? 'bg-emerald-600 text-white'
+                      : 'bg-[#111827] text-gray-400 border border-white/10 hover:text-white hover:border-white/20'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {filteredMarkets.length === 0 ? (
+            <p className="text-gray-400 text-center py-8">해당 조건의 마켓이 없습니다.</p>
+          ) : null}
+
+          {filteredMarkets.map((m) => (
             <Link
               key={m.id}
               href={`/market/${m.id}`}
