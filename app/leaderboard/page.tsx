@@ -127,7 +127,7 @@ export default function LeaderboardPage() {
                       isMe ? 'text-amber-300 font-semibold' : 'text-white'
                     }`}
                   >
-                    {user.username}
+                    {user.username || `익명_${user.telegram_id?.slice(-4) ?? '????'}`}
                     {isMe && (
                       <span className="ml-2 text-xs text-amber-400/80">(나)</span>
                     )}
