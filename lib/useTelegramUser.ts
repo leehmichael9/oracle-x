@@ -11,6 +11,10 @@ export function useTelegramUser() {
     async function initUser() {
       try {
         const tg = (window as any).Telegram?.WebApp
+
+        // ✅ ready()를 가장 먼저 호출
+        if (tg) tg.ready()
+
         let telegramId: string
         let username: string
 
@@ -18,10 +22,9 @@ export function useTelegramUser() {
           const tgUser = tg.initDataUnsafe.user
           telegramId = String(tgUser.id)
           username = tgUser.username || tgUser.first_name || '익명'
-          tg.ready()
         } else {
           telegramId = 'test_user_001'
-          username = '테스트유저'
+          username = '데스트유저'
         }
 
         const { data: existingUser } = await supabase
