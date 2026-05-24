@@ -31,7 +31,7 @@ export function useTelegramUser() {
           .from('users')
           .select('id')
           .eq('telegram_id', telegramId)
-          .single()
+          .maybeSingle()
 
         if (existingUser) {
           setUserId(existingUser.id)
