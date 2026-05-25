@@ -1,3 +1,5 @@
+import type { CSSProperties } from 'react';
+
 export const MARKET_CATEGORIES = [
   '정치/시사',
   '지정학',
@@ -61,8 +63,6 @@ export function normalizeCategory(raw: string): string {
   return trimmed;
 }
 
-import type { CSSProperties } from 'react';
-
 /** YES/NO 공통 컬러 (메인·상세·게이지 공유) */
 export const YES_COLOR = '#34d399';
 export const NO_COLOR = '#f87171';
@@ -71,63 +71,45 @@ export const YES_BG = 'rgba(52, 211, 153, 0.15)';
 export const YES_BG_ACTIVE = 'rgba(52, 211, 153, 0.35)';
 export const NO_BG = 'rgba(248, 113, 113, 0.15)';
 export const NO_BG_ACTIVE = 'rgba(248, 113, 113, 0.35)';
-export const YES_BORDER_SOFT = 'rgba(52, 211, 153, 0.5)';
-export const NO_BORDER_SOFT = 'rgba(248, 113, 113, 0.5)';
 export const BET_SUBMIT_BG = 'rgba(52, 211, 153, 0.8)';
 
-const pillBase: CSSProperties = {
+export type YesNoSide = 'YES' | 'NO';
+
+/** 메인·상세 공통 YES/NO 버튼 레이아웃 */
+export const YES_NO_BUTTON_LAYOUT: CSSProperties = {
+  flex: 1,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  minHeight: 40,
+  padding: '10px 12px',
   borderRadius: 8,
-  padding: 8,
   fontSize: 13,
   fontWeight: 600,
-};
-
-/** 메인 카드 YES/NO 링크 */
-export function getYesPillLinkStyle(): CSSProperties {
-  return {
-    ...pillBase,
-    background: YES_BG,
-    border: `1px solid ${YES_BORDER_SOFT}`,
-    color: YES_COLOR,
-  };
-}
-
-export function getNoPillLinkStyle(): CSSProperties {
-  return {
-    ...pillBase,
-    background: NO_BG,
-    border: `1px solid ${NO_BORDER_SOFT}`,
-    color: NO_COLOR,
-  };
-}
-
-const choiceButtonBase: CSSProperties = {
-  flex: 1,
-  padding: '12px 0',
-  borderRadius: 12,
-  fontWeight: 600,
+  lineHeight: 1.25,
   border: '1px solid',
-  transition: 'background 0.15s ease, transform 0.15s ease',
+  transition: 'background 0.15s ease, opacity 0.15s ease',
+  textAlign: 'center',
 };
 
-/** 상세 페이지 YES/NO 선택 버튼 */
-export function getYesChoiceButtonStyle(active: boolean): CSSProperties {
+/** 메인·상세 YesNoButton 통일 스타일 */
+export function getYesNoButtonStyle(
+  side: YesNoSide,
+  active = false,
+): CSSProperties {
+  if (side === 'YES') {
+    return {
+      ...YES_NO_BUTTON_LAYOUT,
+      background: active ? YES_BG_ACTIVE : YES_BG,
+      borderColor: YES_COLOR,
+      color: YES_COLOR,
+    };
+  }
   return {
-    ...choiceButtonBase,
-    background: active ? YES_BG_ACTIVE : YES_BG,
-    borderColor: YES_COLOR,
-    color: YES_COLOR,
-    transform: active ? 'scale(1.02)' : undefined,
-  };
-}
-
-export function getNoChoiceButtonStyle(active: boolean): CSSProperties {
-  return {
-    ...choiceButtonBase,
+    ...YES_NO_BUTTON_LAYOUT,
     background: active ? NO_BG_ACTIVE : NO_BG,
     borderColor: NO_COLOR,
     color: NO_COLOR,
-    transform: active ? 'scale(1.02)' : undefined,
   };
 }
 

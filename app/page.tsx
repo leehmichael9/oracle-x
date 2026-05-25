@@ -4,11 +4,10 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AppHeader } from '@/components/AppHeader';
 import { BottomNav, type BottomNavTab } from '@/components/BottomNav';
+import { YesNoButton, YesNoButtonGroup } from '@/components/YesNoButton';
 import {
   getCategoryStyle,
-  getNoPillLinkStyle,
   getSettledResultBadgeStyle,
-  getYesPillLinkStyle,
   MARKET_CATEGORIES,
 } from '@/lib/categories';
 import {
@@ -283,22 +282,17 @@ export default function Home() {
                   </div>
                 </Link>
 
-                <div className="flex gap-2 mt-3 w-full">
-                  <Link
+                <YesNoButtonGroup className="mt-3">
+                  <YesNoButton
+                    side="YES"
                     href={`/market/${m.id}?side=yes`}
-                    className="flex-1 text-center transition-opacity hover:opacity-90"
-                    style={getYesPillLinkStyle()}
                   >
                     YES {m.yes_percent}%
-                  </Link>
-                  <Link
-                    href={`/market/${m.id}?side=no`}
-                    className="flex-1 text-center transition-opacity hover:opacity-90"
-                    style={getNoPillLinkStyle()}
-                  >
+                  </YesNoButton>
+                  <YesNoButton side="NO" href={`/market/${m.id}?side=no`}>
                     NO {m.no_percent}%
-                  </Link>
-                </div>
+                  </YesNoButton>
+                </YesNoButtonGroup>
               </div>
             );
           })}

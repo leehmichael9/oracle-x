@@ -3,11 +3,10 @@
 import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
+import { YesNoButton, YesNoButtonGroup } from '@/components/YesNoButton';
 import {
   BET_SUBMIT_BG,
-  getNoChoiceButtonStyle,
   getSettledResultBadgeStyle,
-  getYesChoiceButtonStyle,
   getYesNoProgressFillStyles,
   NO_COLOR,
   YES_COLOR,
@@ -273,30 +272,28 @@ export default function MarketBetPage() {
           </p>
         ) : (
           <>
-        <div className="flex gap-3">
-          <button
-            type="button"
+        <YesNoButtonGroup>
+          <YesNoButton
+            side="YES"
+            active={choice === 'YES'}
             onClick={() => {
               setChoice('YES');
               setSuccess(false);
             }}
-            className="hover:opacity-90"
-            style={getYesChoiceButtonStyle(choice === 'YES')}
           >
             YES
-          </button>
-          <button
-            type="button"
+          </YesNoButton>
+          <YesNoButton
+            side="NO"
+            active={choice === 'NO'}
             onClick={() => {
               setChoice('NO');
               setSuccess(false);
             }}
-            className="hover:opacity-90"
-            style={getNoChoiceButtonStyle(choice === 'NO')}
           >
             NO
-          </button>
-        </div>
+          </YesNoButton>
+        </YesNoButtonGroup>
 
         <div>
           <label htmlFor="points" className="block text-sm text-gray-400 mb-2">
