@@ -3,6 +3,11 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { MARKET_CATEGORIES } from '@/lib/categories';
+import {
+  formatEndDateDisplay,
+  isMarketExpiredByEndDate,
+  toDatetimeLocalValue,
+} from '@/lib/market';
 import { supabase } from '@/lib/supabase';
 
 type Market = {
@@ -13,6 +18,7 @@ type Market = {
   no_percent: number;
   status: string;
   result: string | null;
+  end_date: string | null;
 };
 
 
@@ -29,6 +35,11 @@ export default function AdminPage() {
   const [categoryEditError, setCategoryEditError] = useState<string | null>(null);
   const [yesPercent, setYesPercent] = useState('');
   const [noPercent, setNoPercent] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [editingEndDateId, setEditingEndDateId] = useState<number | null>(null);
+  const [editEndDate, setEditEndDate] = useState('');
+  const [savingEndDateId, setSavingEndDateId] = useState<number | null>(null);
+  const [endDateEditError, setEndDateEditError] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [formSuccess, setFormSuccess] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -73,6 +84,16 @@ export default function AdminPage() {
       return;
     }
 
+    if (!endDate.trim()) {
+      setFormError('마감일(end_date)을 입력해 주세요.');
+      return;
+    }
+    const endDateIso = new Date(endDate).toISOString();
+    if (Number.isNaN(new Date(endDate).getTime())) {
+      setFormError('마감일 형식이 올바르지 않습니다.');
+      return;
+    }
+
     setSubmitting(true);
     try {
       const { error } = await supabase.from('markets').insert({
@@ -82,6 +103,7 @@ export default function AdminPage() {
         no_percent: no,
         status: 'active',
         result: null,
+        end_date: endDateIso,
       });
 
       if (error) {
@@ -93,6 +115,7 @@ export default function AdminPage() {
       setCategory(MARKET_CATEGORIES[0]);
       setYesPercent('');
       setNoPercent('');
+      setEndDate('');
       setFormSuccess(true);
       await fetch('/api/notify', {
         method: 'POST',
@@ -175,6 +198,48 @@ export default function AdminPage() {
     setCategoryEditError(null);
   }
 
+  function startEndDateEdit(market: Market) {
+    setEndDateEditError(null);
+    setEditingEndDateId(market.id);
+    setEditEndDate(toDatetimeLocalValue(market.end_date));
+  }
+
+  function cancelEndDateEdit() {
+    setEditingEndDateId(null);
+    setEndDateEditError(null);
+  }
+
+  async function handleSaveEndDate(marketId: number) {
+    if (!editEndDate.trim()) {
+      setEndDateEditError('마감일을 입력해 주세요.');
+      return;
+    }
+    const parsed = new Date(editEndDate);
+    if (Number.isNaN(parsed.getTime())) {
+      setEndDateEditError('마감일 형식이 올바르지 않습니다.');
+      return;
+    }
+
+    setSavingEndDateId(marketId);
+    setEndDateEditError(null);
+    try {
+      const { error } = await supabase
+        .from('markets')
+        .update({ end_date: parsed.toISOString() })
+        .eq('id', marketId);
+
+      if (error) {
+        setEndDateEditError(error.message ?? '마감일 저장에 실패했습니다.');
+        return;
+      }
+
+      setEditingEndDateId(null);
+      await loadMarkets();
+    } finally {
+      setSavingEndDateId(null);
+    }
+  }
+
   async function handleSaveCategory(marketId: number) {
     setSavingCategoryId(marketId);
     setCategoryEditError(null);
@@ -253,6 +318,22 @@ export default function AdminPage() {
             </select>
           </div>
 
+          <div>
+            <label htmlFor="end_date" className="block text-sm text-gray-400 mb-2">
+              마감일 (end_date)
+            </label>
+            <input
+              id="end_date"
+              type="datetime-local"
+              value={endDate}
+              onChange={(e) => {
+                setEndDate(e.target.value);
+                setFormSuccess(false);
+              }}
+              className="w-full rounded-lg bg-[#0a0f1e] border border-white/15 px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50"
+            />
+          </div>
+
           <div className="flex gap-4">
             <div className="flex-1">
               <label htmlFor="yes_percent" className="block text-sm text-gray-400 mb-2">
@@ -329,6 +410,11 @@ export default function AdminPage() {
             {categoryEditError}
           </p>
         ) : null}
+        {endDateEditError ? (
+          <p className="text-sm text-red-400 bg-red-950/30 border border-red-900/50 rounded-lg px-3 py-2 mb-4">
+            {endDateEditError}
+          </p>
+        ) : null}
         {listLoading ? (
           <p className="text-gray-400">로딩 중...</p>
         ) : markets.length === 0 ? (
@@ -402,6 +488,48 @@ export default function AdminPage() {
                 <p className="text-sm text-gray-500">
                   YES {m.yes_percent}% · NO {m.no_percent}%
                 </p>
+                <div className="flex flex-wrap items-center gap-2 text-xs">
+                  {editingEndDateId === m.id ? (
+                    <>
+                      <input
+                        type="datetime-local"
+                        value={editEndDate}
+                        onChange={(e) => setEditEndDate(e.target.value)}
+                        className="rounded-md bg-[#0a0f1e] border border-white/15 px-2 py-1 text-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                      />
+                      <button
+                        type="button"
+                        disabled={savingEndDateId === m.id}
+                        onClick={() => handleSaveEndDate(m.id)}
+                        className="px-2 py-1 rounded-md bg-emerald-600 text-white hover:bg-emerald-500 disabled:opacity-50 transition-colors"
+                      >
+                        {savingEndDateId === m.id ? '저장 중...' : '저장'}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={savingEndDateId === m.id}
+                        onClick={cancelEndDateEdit}
+                        className="px-2 py-1 rounded-md bg-white/5 text-gray-300 hover:bg-white/10 disabled:opacity-50 transition-colors"
+                      >
+                        취소
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <span className="px-2 py-1 rounded-md bg-white/5 text-gray-300">
+                        마감: {formatEndDateDisplay(m.end_date)}
+                        {isMarketExpiredByEndDate(m.end_date) ? ' (경과)' : ''}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => startEndDateEdit(m)}
+                        className="px-2 py-1 rounded-md bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
+                      >
+                        마감일 수정
+                      </button>
+                    </>
+                  )}
+                </div>
                 {m.status === 'active' ? (
                   <div className="flex gap-3 pt-1">
                     <button

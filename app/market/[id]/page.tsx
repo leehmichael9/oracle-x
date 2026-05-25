@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
+import { isMarketEnded, isMarketSettled } from '@/lib/market';
 import { supabase } from '@/lib/supabase';
 import { useTelegramUser } from '@/lib/useTelegramUser';
 
@@ -18,6 +19,7 @@ type Market = {
   no_percent: number;
   status: string;
   result: 'YES' | 'NO' | null;
+  end_date: string | null;
 };
 
 type Choice = 'YES' | 'NO';
@@ -98,6 +100,10 @@ export default function MarketBetPage() {
     }
     if (!pointsValid) {
       setError(`포인트는 ${MIN_BET}~${MAX_BET} 사이 정수로 입력해 주세요.`);
+      return;
+    }
+    if (market && isMarketEnded(market)) {
+      setError('마감된 마켓에는 베팅할 수 없습니다.');
       return;
     }
 
@@ -194,21 +200,34 @@ export default function MarketBetPage() {
                 />
               </div>
             </div>
-        {market.status === 'resolved' && (
-  <div className={`flex items-center justify-center gap-2 py-2 px-4 rounded-xl font-bold text-sm ${
-    market.result === 'YES'
-      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
-      : 'bg-red-500/20 text-red-400 border border-red-500/40'
-  }`}>
-    {market.result === 'YES' ? '✅ 결과: YES' : '❌ 결과: NO'}
-    <span className="font-normal ml-1">— 마켓 종료</span>
-  </div>
-)}
-{market.status === 'resolved' ? (
-  <p className="text-center text-gray-500 text-sm py-4 border border-white/10 rounded-xl">
-    이 마켓은 종료되었습니다. 베팅이 불가합니다.
-  </p>
-) : (<>
+        {isMarketEnded(market) && (
+          <div
+            className={`flex items-center justify-center gap-2 py-2 px-4 rounded-xl font-bold text-sm ${
+              isMarketSettled(market)
+                ? market.result === 'YES'
+                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
+                  : 'bg-red-500/20 text-red-400 border border-red-500/40'
+                : 'bg-gray-800/80 text-gray-400 border border-white/10'
+            }`}
+          >
+            {isMarketSettled(market) ? (
+              <>
+                {market.result === 'YES' ? '✅ 결과: YES' : '❌ 결과: NO'}
+                <span className="font-normal ml-1">— 마켓 종료</span>
+              </>
+            ) : (
+              <>⏱️ 마감 — 베팅 종료</>
+            )}
+          </div>
+        )}
+        {isMarketEnded(market) ? (
+          <p className="text-center text-gray-500 text-sm py-4 border border-white/10 rounded-xl">
+            {isMarketSettled(market)
+              ? '이 마켓은 종료되었습니다. 베팅이 불가합니다.'
+              : '마감 기한이 지나 베팅이 불가합니다.'}
+          </p>
+        ) : (
+          <>
         <div className="flex gap-3">
           <button
             type="button"
@@ -283,7 +302,8 @@ export default function MarketBetPage() {
         >
           {submitting ? '처리 중...' : '베팅하기'}
         </button>
-        </>)}
+          </>
+        )}
       </div>
     </div>
   );

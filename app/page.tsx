@@ -3,6 +3,12 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { AppHeader } from '@/components/AppHeader';
 import { MARKET_CATEGORIES } from '@/lib/categories';
+import {
+  isMarketActiveForFilter,
+  isMarketClosedForFilter,
+  isMarketEnded,
+  isMarketSettled,
+} from '@/lib/market';
 import { supabase } from '@/lib/supabase';
 import { useTelegramUser } from '@/lib/useTelegramUser';
 
@@ -20,6 +26,7 @@ type Market = {
   status: string;
   result: 'YES' | 'NO' | null;
   created_at: string;
+  end_date: string | null;
 };
 
 function isNewMarket(createdAt: string | undefined): boolean {
@@ -44,8 +51,8 @@ export default function Home() {
     return markets.filter((m) => {
       if (keyword && !m.question.toLowerCase().includes(keyword)) return false;
       if (categoryFilter !== '전체' && m.category !== categoryFilter) return false;
-      if (statusFilter === 'active' && m.status !== 'active') return false;
-      if (statusFilter === 'resolved' && m.status !== 'resolved') return false;
+      if (statusFilter === 'active' && !isMarketActiveForFilter(m)) return false;
+      if (statusFilter === 'resolved' && !isMarketClosedForFilter(m)) return false;
       return true;
     });
   }, [markets, searchQuery, categoryFilter, statusFilter]);
@@ -171,15 +178,21 @@ export default function Home() {
                 <div className="bg-emerald-500" style={{ width: `${m.yes_percent}%` }}></div>
                 <div className="bg-red-500" style={{ width: `${m.no_percent}%` }}></div>
               </div>
-              {m.status === 'resolved' && (
+              {isMarketEnded(m) && (
                 <div
                   className={`text-xs font-bold px-2 py-1 rounded-lg text-center mt-1 ${
-                    m.result === 'YES'
-                      ? 'bg-emerald-500/20 text-emerald-400'
-                      : 'bg-red-500/20 text-red-400'
+                    isMarketSettled(m)
+                      ? m.result === 'YES'
+                        ? 'bg-emerald-500/20 text-emerald-400'
+                        : 'bg-red-500/20 text-red-400'
+                      : 'bg-gray-800/80 text-gray-400'
                   }`}
                 >
-                  {m.result === 'YES' ? '✅ 종료 · YES' : '❌ 종료 · NO'}
+                  {isMarketSettled(m)
+                    ? m.result === 'YES'
+                      ? '✅ 종료 · YES'
+                      : '❌ 종료 · NO'
+                    : '⏱️ 마감 · 베팅 종료'}
                 </div>
               )}
               {isNewMarket(m.created_at) ? (
