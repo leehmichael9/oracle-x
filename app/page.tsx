@@ -321,7 +321,7 @@ export default function Home() {
                     className="flex-1 text-center transition-opacity hover:opacity-90"
                     style={{
                       background: 'rgba(52,211,153,0.15)',
-                      border: '1px solid rgba(52,211,153,0.4)',
+                      border: '1px solid rgba(52,211,153,0.5)',
                       color: YES_COLOR,
                       borderRadius: 8,
                       padding: 8,
@@ -336,7 +336,7 @@ export default function Home() {
                     className="flex-1 text-center transition-opacity hover:opacity-90"
                     style={{
                       background: 'rgba(248,113,113,0.15)',
-                      border: '1px solid rgba(248,113,113,0.4)',
+                      border: '1px solid rgba(248,113,113,0.5)',
                       color: NO_COLOR,
                       borderRadius: 8,
                       padding: 8,
