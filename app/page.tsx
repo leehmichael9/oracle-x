@@ -67,7 +67,7 @@ export default function Home() {
         pointsLoading={userLoading || (Boolean(userId) && points === null)}
       />
       <p className="text-gray-400 text-sm mb-4 w-full max-w-xl">
-        Asia&apos;s Crypto Prediction Market
+        Asia&apos;s No.1 Prediction Market
       </p>
       {loading || userLoading ? (
         <p className="text-gray-400">로딩 중...</p>
