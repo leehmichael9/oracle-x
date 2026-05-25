@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
 
     const { data: round, error: roundErr } = await admin
       .from('quiz_rounds')
-      .select('id, telegram_id, question_ids, completed_at')
+      .select('id, user_id, question_ids, completed_at')
       .eq('id', roundId)
       .maybeSingle();
 
@@ -127,7 +127,7 @@ export async function POST(request: NextRequest) {
 
     if (pointsEarned > 0) {
       const { error: txErr } = await admin.from('point_transactions').insert({
-        user_id: round.telegram_id,
+        user_id: round.user_id,
         amount: pointsEarned,
         reason: 'quiz_correct',
       });
