@@ -615,12 +615,13 @@ export default function AdminPage() {
           <p className="text-gray-400">필터 조건에 맞는 마켓이 없습니다.</p>
         ) : (
           <div className="overflow-x-auto rounded-xl border border-white/10">
-            <table className="w-full min-w-[960px] border-collapse text-left">
+            <table className="w-full min-w-[1020px] border-collapse text-left">
               <thead>
                 <tr className="bg-[#1e293b] border-b border-white/10">
                   <th className={thClass}>#</th>
                   <th className={`${thClass} min-w-[200px]`}>질문</th>
-                  <th className={thClass}>카테고리</th>
+                  <th className={thClass}>대분류</th>
+                  <th className={thClass}>세분류</th>
                   <th className={thClass}>상태</th>
                   <th className={thClass}>YES% / NO%</th>
                   <th className={thClass}>
@@ -666,7 +667,10 @@ export default function AdminPage() {
                           {m.question}
                         </p>
                       </td>
-                      <td className={`${tdClass} text-xs min-w-[100px]`}>
+                      <td className={`${tdClass} text-xs whitespace-nowrap`}>
+                        {normalizeCategory(m.category)}
+                      </td>
+                      <td className={`${tdClass} text-xs min-w-[90px]`}>
                         {isEditingSubCategory ? (
                           <div className="flex flex-col gap-1">
                             <input
@@ -674,7 +678,7 @@ export default function AdminPage() {
                               value={editSubCategory}
                               onChange={(e) => setEditSubCategory(e.target.value)}
                               placeholder="세분류"
-                              className="w-full min-w-[120px] rounded bg-[#0a0f1e] border border-white/15 px-1.5 py-1 text-gray-200 text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500/50"
+                              className="w-full min-w-[100px] rounded bg-[#0a0f1e] border border-white/15 px-1.5 py-1 text-gray-200 text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500/50"
                             />
                             <div className="flex gap-1">
                               <button
@@ -699,17 +703,14 @@ export default function AdminPage() {
                           <button
                             type="button"
                             onClick={() => startSubCategoryEdit(m)}
-                            className="text-left rounded p-1 -m-1 hover:bg-white/5 transition-colors"
+                            className="text-left rounded p-1 -m-1 hover:bg-white/5 transition-colors whitespace-nowrap"
                             title="클릭하여 세분류 수정"
                           >
-                            <div className="text-gray-200 whitespace-nowrap">
-                              {normalizeCategory(m.category)}
-                            </div>
                             {m.sub_category?.trim() ? (
-                              <div className="text-[10px] text-gray-500 mt-0.5 whitespace-nowrap">
-                                {m.sub_category.trim()}
-                              </div>
-                            ) : null}
+                              <span className="text-gray-300">{m.sub_category.trim()}</span>
+                            ) : (
+                              <span className="text-gray-600">—</span>
+                            )}
                           </button>
                         )}
                       </td>
@@ -808,13 +809,6 @@ export default function AdminPage() {
                                 정산
                               </button>
                             )}
-                            <button
-                              type="button"
-                              onClick={() => startSubCategoryEdit(m)}
-                              className="px-2 py-1 rounded text-xs font-medium border border-white/15 text-gray-300 hover:bg-white/5"
-                            >
-                              세분류수정
-                            </button>
                             <button
                               type="button"
                               onClick={() => startEndDateEdit(m)}
