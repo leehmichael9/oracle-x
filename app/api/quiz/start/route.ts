@@ -6,19 +6,15 @@ export const dynamic = 'force-dynamic';
 const DAILY_LIMIT = 3;
 const QUESTIONS_PER_ROUND = 5;
 
-/** KST(Asia/Seoul) 기준 오늘 00:00 ~ 23:59:59.999 (ISO) */
 function getKstTodayBounds() {
-  const dateKey = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Asia/Seoul',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).format(new Date());
+  const now = new Date();
+  const kstOffset = 9 * 60 * 60 * 1000;
+  const kstNow = new Date(now.getTime() + kstOffset);
+  const todayKST = kstNow.toISOString().split('T')[0];
 
   return {
-    dateKey,
-    start: `${dateKey}T00:00:00+09:00`,
-    end: `${dateKey}T23:59:59.999+09:00`,
+    start: `${todayKST}T00:00:00+09:00`,
+    end: `${todayKST}T23:59:59+09:00`,
   };
 }
 
@@ -46,7 +42,7 @@ export async function POST(request: NextRequest) {
     const { count: completedToday, error: countErr } = await admin
       .from('quiz_rounds')
       .select('*', { count: 'exact', head: true })
-      .eq('telegram_id', telegramId)
+      .eq('user_id', telegramId)
       .not('completed_at', 'is', null)
       .gte('completed_at', start)
       .lte('completed_at', end);
