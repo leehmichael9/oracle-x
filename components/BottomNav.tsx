@@ -1,6 +1,10 @@
 'use client';
 
-export type BottomNavTab = 'home' | 'search' | 'breaking' | 'profile';
+import { Brain } from 'lucide-react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+
+export type BottomNavTab = 'home' | 'search' | 'quiz' | 'breaking' | 'profile';
 
 type BottomNavProps = {
   activeTab: BottomNavTab;
@@ -10,12 +14,36 @@ type BottomNavProps = {
   onProfile: () => void;
 };
 
-const NAV_ITEMS: { id: BottomNavTab; icon: string; label: string }[] = [
-  { id: 'home', icon: '🏠', label: '홈' },
-  { id: 'search', icon: '🔍', label: '검색' },
-  { id: 'breaking', icon: '🔥', label: '속보' },
-  { id: 'profile', icon: '👤', label: '내정보' },
+type NavItem =
+  | {
+      id: Exclude<BottomNavTab, 'quiz'>;
+      label: string;
+      icon: string;
+      kind: 'button';
+    }
+  | {
+      id: 'quiz';
+      label: string;
+      kind: 'link';
+      href: string;
+    };
+
+const NAV_ITEMS: NavItem[] = [
+  { id: 'home', icon: '🏠', label: '홈', kind: 'button' },
+  { id: 'search', icon: '🔍', label: '검색', kind: 'button' },
+  { id: 'quiz', label: '퀴즈', kind: 'link', href: '/quiz' },
+  { id: 'breaking', icon: '🔥', label: '속보', kind: 'button' },
+  { id: 'profile', icon: '👤', label: '내정보', kind: 'button' },
 ];
+
+function isTabActive(
+  id: BottomNavTab,
+  activeTab: BottomNavTab,
+  pathname: string,
+): boolean {
+  if (id === 'quiz') return pathname === '/quiz';
+  return activeTab === id;
+}
 
 export function BottomNav({
   activeTab,
@@ -24,12 +52,20 @@ export function BottomNav({
   onBreaking,
   onProfile,
 }: BottomNavProps) {
-  const handlers: Record<BottomNavTab, () => void> = {
+  const pathname = usePathname();
+
+  const handlers: Record<
+    Exclude<BottomNavTab, 'quiz'>,
+    () => void
+  > = {
     home: onHome,
     search: onSearch,
     breaking: onBreaking,
     profile: onProfile,
   };
+
+  const inactiveColor = 'rgba(255,255,255,0.4)';
+  const activeColor = '#ffffff';
 
   return (
     <nav
@@ -39,21 +75,55 @@ export function BottomNav({
         borderColor: 'rgba(255,255,255,0.08)',
       }}
     >
-      <div className="mx-auto flex h-full max-w-xl items-stretch">
-        {NAV_ITEMS.map(({ id, icon, label }) => {
-          const active = activeTab === id;
+      <div className="mx-auto flex h-full w-full max-w-xl items-stretch">
+        {NAV_ITEMS.map((item) => {
+          const active = isTabActive(item.id, activeTab, pathname);
+          const color = active ? activeColor : inactiveColor;
+
+          const inner = (
+            <>
+              {item.kind === 'link' ? (
+                <Brain
+                  className="h-5 w-5 shrink-0"
+                  strokeWidth={2}
+                  aria-hidden
+                />
+              ) : (
+                <span className="text-lg leading-none" aria-hidden>
+                  {item.icon}
+                </span>
+              )}
+              <span className="text-[10px] font-medium leading-none">
+                {item.label}
+              </span>
+            </>
+          );
+
+          const className =
+            'flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 px-0.5 transition-colors';
+
+          if (item.kind === 'link') {
+            return (
+              <Link
+                key={item.id}
+                href={item.href}
+                className={className}
+                style={{ color }}
+              >
+                {inner}
+              </Link>
+            );
+          }
+
           return (
             <button
-              key={id}
+              key={item.id}
               type="button"
-              onClick={handlers[id]}
-              className="flex flex-1 flex-col items-center justify-center gap-0.5 transition-colors"
-              style={{ color: active ? '#ffffff' : 'rgba(255,255,255,0.4)' }}
+              onClick={handlers[item.id]}
+              className={className}
+              style={{ color }}
             >
-              <span className="text-lg leading-none" aria-hidden>
-                {icon}
-              </span>
-              <span className="text-[10px] font-medium leading-none">{label}</span>
+              {inner}
             </button>
           );
         })}
