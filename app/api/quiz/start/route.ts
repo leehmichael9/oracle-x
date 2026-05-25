@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
     const { data: round, error: insertErr } = await admin
       .from('quiz_rounds')
       .insert({
-        telegram_id: telegramId,
+        user_id: telegramId,
         question_ids: questionIds,
         completed_at: null,
       })
