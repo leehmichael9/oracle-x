@@ -1,13 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { MARKET_CATEGORIES } from '@/lib/categories';
-import {
-  formatEndDateDisplay,
-  isMarketExpiredByEndDate,
-  toDatetimeLocalValue,
-} from '@/lib/market';
+import { isMarketExpiredByEndDate, toDatetimeLocalValue } from '@/lib/market';
 import { supabase } from '@/lib/supabase';
 
 type Market = {
@@ -22,23 +18,68 @@ type Market = {
   is_breaking: boolean;
 };
 
+type AdminDisplayStatus = 'active' | 'ended' | 'settled';
+type StatusFilter = 'all' | AdminDisplayStatus;
+type EndDateSort = 'asc' | 'desc';
+
+function getAdminMarketStatus(m: Market): AdminDisplayStatus {
+  if (m.status === 'resolved') return 'settled';
+  if (m.status === 'active' && isMarketExpiredByEndDate(m.end_date)) return 'ended';
+  return 'active';
+}
+
+function formatAdminEndDate(iso: string | null | undefined): string {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '—';
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}.${pad(d.getMonth() + 1)}.${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function StatusBadge({ status }: { status: AdminDisplayStatus }) {
+  const config = {
+    active: {
+      label: '진행중',
+      className: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
+    },
+    ended: {
+      label: '마감',
+      className: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
+    },
+    settled: {
+      label: '정산완료',
+      className: 'bg-slate-500/20 text-slate-300 border-slate-500/40',
+    },
+  }[status];
+
+  return (
+    <span
+      className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium border whitespace-nowrap ${config.className}`}
+    >
+      {config.label}
+    </span>
+  );
+}
+
+const STATUS_TABS: { value: StatusFilter; label: string }[] = [
+  { value: 'all', label: '전체' },
+  { value: 'active', label: '진행중' },
+  { value: 'ended', label: '마감' },
+  { value: 'settled', label: '정산완료' },
+];
 
 export default function AdminPage() {
   const [markets, setMarkets] = useState<Market[]>([]);
   const [listLoading, setListLoading] = useState(true);
   const [resolvingId, setResolvingId] = useState<number | null>(null);
+  const [expandSettleId, setExpandSettleId] = useState<number | null>(null);
 
   const [question, setQuestion] = useState('');
   const [category, setCategory] = useState<string>(MARKET_CATEGORIES[0]);
-  const [editingCategoryId, setEditingCategoryId] = useState<number | null>(null);
-  const [editCategory, setEditCategory] = useState<string>(MARKET_CATEGORIES[0]);
-  const [savingCategoryId, setSavingCategoryId] = useState<number | null>(null);
-  const [categoryEditError, setCategoryEditError] = useState<string | null>(null);
-  const [yesPercent, setYesPercent] = useState('');
-  const [noPercent, setNoPercent] = useState('');
+  const [yesPercent, setYesPercent] = useState('50');
+  const [noPercent, setNoPercent] = useState('50');
   const [endDate, setEndDate] = useState('');
   const [isBreaking, setIsBreaking] = useState(false);
-  const [savingBreakingId, setSavingBreakingId] = useState<number | null>(null);
   const [editingEndDateId, setEditingEndDateId] = useState<number | null>(null);
   const [editEndDate, setEditEndDate] = useState('');
   const [savingEndDateId, setSavingEndDateId] = useState<number | null>(null);
@@ -48,6 +89,10 @@ export default function AdminPage() {
   const [submitting, setSubmitting] = useState(false);
   const [settleMessage, setSettleMessage] = useState<string | null>(null);
   const [resolveError, setResolveError] = useState<string | null>(null);
+
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [categoryFilter, setCategoryFilter] = useState<string>('전체');
+  const [endDateSort, setEndDateSort] = useState<EndDateSort>('desc');
 
   const loadMarkets = useCallback(async () => {
     setListLoading(true);
@@ -64,6 +109,25 @@ export default function AdminPage() {
   useEffect(() => {
     loadMarkets();
   }, [loadMarkets]);
+
+  const displayMarkets = useMemo(() => {
+    let list = [...markets];
+
+    if (statusFilter !== 'all') {
+      list = list.filter((m) => getAdminMarketStatus(m) === statusFilter);
+    }
+    if (categoryFilter !== '전체') {
+      list = list.filter((m) => m.category === categoryFilter);
+    }
+
+    list.sort((a, b) => {
+      const ta = a.end_date ? new Date(a.end_date).getTime() : 0;
+      const tb = b.end_date ? new Date(b.end_date).getTime() : 0;
+      return endDateSort === 'asc' ? ta - tb : tb - ta;
+    });
+
+    return list;
+  }, [markets, statusFilter, categoryFilter, endDateSort]);
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
@@ -117,8 +181,8 @@ export default function AdminPage() {
 
       setQuestion('');
       setCategory(MARKET_CATEGORIES[0]);
-      setYesPercent('');
-      setNoPercent('');
+      setYesPercent('50');
+      setNoPercent('50');
       setEndDate('');
       setIsBreaking(false);
       setFormSuccess(true);
@@ -133,7 +197,6 @@ export default function AdminPage() {
     }
   }
 
-  
   async function handleResolve(marketId: number, result: 'YES' | 'NO') {
     setResolvingId(marketId);
     setSettleMessage(null);
@@ -155,8 +218,9 @@ export default function AdminPage() {
       }
 
       setSettleMessage(
-        `정산 완료! ${data.settled_count}명에게 포인트 지급 (총 풀: ${data.total_pool}P)`
+        `정산 완료! ${data.settled_count}명에게 포인트 지급 (총 풀: ${data.total_pool}P)`,
       );
+      setExpandSettleId(null);
 
       const market = markets.find((m) => m.id === marketId);
       if (market) {
@@ -175,36 +239,25 @@ export default function AdminPage() {
       setResolvingId(null);
     }
   }
-  async function handleDelete(marketId: number, question: string) {
-    if (!window.confirm(`마켓을 삭제하시겠습니까?\n\n"${question}"\n\n이 작업은 되돌릴 수 없습니다.`)) return
 
-    // 관련 베팅 먼저 삭제
-    await supabase.from('bets').delete().eq('market_id', marketId)
+  async function handleDelete(marketId: number) {
+    if (!window.confirm('이 마켓을 삭제하시겠습니까?')) return;
 
-    // 마켓 삭제
-    const { error } = await supabase.from('markets').delete().eq('id', marketId)
+    await supabase.from('bets').delete().eq('market_id', marketId);
+
+    const { error } = await supabase.from('markets').delete().eq('id', marketId);
 
     if (error) {
-      alert('마켓 삭제에 실패했습니다: ' + error.message)
-      return
+      alert('마켓 삭제에 실패했습니다: ' + error.message);
+      return;
     }
 
-    await loadMarkets()
-  }
-
-  function startCategoryEdit(market: Market) {
-    setCategoryEditError(null);
-    setEditingCategoryId(market.id);
-    setEditCategory(market.category);
-  }
-
-  function cancelCategoryEdit() {
-    setEditingCategoryId(null);
-    setCategoryEditError(null);
+    await loadMarkets();
   }
 
   function startEndDateEdit(market: Market) {
     setEndDateEditError(null);
+    setExpandSettleId(null);
     setEditingEndDateId(market.id);
     setEditEndDate(toDatetimeLocalValue(market.end_date));
   }
@@ -245,48 +298,16 @@ export default function AdminPage() {
     }
   }
 
-  async function handleToggleBreaking(marketId: number, nextValue: boolean) {
-    setSavingBreakingId(marketId);
-    try {
-      const { error } = await supabase
-        .from('markets')
-        .update({ is_breaking: nextValue })
-        .eq('id', marketId);
-
-      if (error) {
-        alert('속보 설정 저장에 실패했습니다: ' + error.message);
-        return;
-      }
-
-      await loadMarkets();
-    } finally {
-      setSavingBreakingId(null);
-    }
+  function toggleEndDateSort() {
+    setEndDateSort((s) => (s === 'asc' ? 'desc' : 'asc'));
   }
 
-  async function handleSaveCategory(marketId: number) {
-    setSavingCategoryId(marketId);
-    setCategoryEditError(null);
-    try {
-      const { error } = await supabase
-        .from('markets')
-        .update({ category: editCategory })
-        .eq('id', marketId);
-
-      if (error) {
-        setCategoryEditError(error.message ?? '카테고리 저장에 실패했습니다.');
-        return;
-      }
-
-      setEditingCategoryId(null);
-      await loadMarkets();
-    } finally {
-      setSavingCategoryId(null);
-    }
-  }
+  const thClass =
+    'px-3 py-2.5 text-left text-xs font-semibold text-gray-400 whitespace-nowrap';
+  const tdClass = 'px-3 py-2.5 text-sm text-gray-300 align-middle';
 
   return (
-    <div className="min-h-screen bg-[#0a0f1e] flex flex-col items-center py-12 px-4">
+    <div className="min-h-screen bg-[#0f172a] flex flex-col items-center py-12 px-4">
       <p className="text-amber-400 text-sm font-medium tracking-wide mb-2">
         관리자 전용
       </p>
@@ -298,7 +319,7 @@ export default function AdminPage() {
         ← 홈으로
       </Link>
 
-      <section className="w-full max-w-xl mb-12">
+      <section className="w-full max-w-6xl mb-12">
         <h2 className="text-lg font-semibold text-white mb-4">마켓 생성</h2>
         <form
           onSubmit={handleCreate}
@@ -430,8 +451,9 @@ export default function AdminPage() {
         </form>
       </section>
 
-      <section className="w-full max-w-xl">
+      <section className="w-full max-w-6xl">
         <h2 className="text-lg font-semibold text-white mb-4">마켓 목록</h2>
+
         {settleMessage ? (
           <p className="text-center text-emerald-400 font-semibold mb-4 py-2 bg-emerald-950/30 border border-emerald-900/50 rounded-lg">
             {settleMessage}
@@ -442,172 +464,223 @@ export default function AdminPage() {
             {resolveError}
           </p>
         ) : null}
-        {categoryEditError ? (
-          <p className="text-sm text-red-400 bg-red-950/30 border border-red-900/50 rounded-lg px-3 py-2 mb-4">
-            {categoryEditError}
-          </p>
-        ) : null}
         {endDateEditError ? (
           <p className="text-sm text-red-400 bg-red-950/30 border border-red-900/50 rounded-lg px-3 py-2 mb-4">
             {endDateEditError}
           </p>
         ) : null}
+
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+          <div className="flex flex-wrap gap-1.5">
+            {STATUS_TABS.map(({ value, label }) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setStatusFilter(value)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
+                  statusFilter === value
+                    ? 'bg-[#1e293b] text-white border-white/20'
+                    : 'bg-[#111827] text-gray-400 border-white/10 hover:text-white'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <select
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+            className="rounded-lg bg-[#111827] border border-white/10 px-3 py-1.5 text-sm text-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+          >
+            <option value="전체">카테고리: 전체</option>
+            {MARKET_CATEGORIES.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
+          <span className="text-xs text-gray-500">
+            {displayMarkets.length}건 표시
+          </span>
+        </div>
+
         {listLoading ? (
           <p className="text-gray-400">로딩 중...</p>
         ) : markets.length === 0 ? (
           <p className="text-gray-400">등록된 마켓이 없습니다.</p>
+        ) : displayMarkets.length === 0 ? (
+          <p className="text-gray-400">필터 조건에 맞는 마켓이 없습니다.</p>
         ) : (
-          <div className="flex flex-col gap-4">
-            {markets.map((m) => (
-              <div
-                key={m.id}
-                className="bg-[#111827] border border-white/10 rounded-xl p-5 space-y-3"
-              >
-                <p className="text-white font-medium">{m.question}</p>
-                <div className="flex flex-wrap items-center gap-2 text-xs">
-                  {editingCategoryId === m.id ? (
-                    <>
-                      <select
-                        value={editCategory}
-                        onChange={(e) => setEditCategory(e.target.value)}
-                        className="rounded-md bg-[#0a0f1e] border border-white/15 px-2 py-1 text-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
-                      >
-                        {MARKET_CATEGORIES.map((c) => (
-                          <option key={c} value={c}>
-                            {c}
-                          </option>
-                        ))}
-                      </select>
-                      <button
-                        type="button"
-                        disabled={savingCategoryId === m.id}
-                        onClick={() => handleSaveCategory(m.id)}
-                        className="px-2 py-1 rounded-md bg-emerald-600 text-white hover:bg-emerald-500 disabled:opacity-50 transition-colors"
-                      >
-                        {savingCategoryId === m.id ? '저장 중...' : '저장'}
-                      </button>
-                      <button
-                        type="button"
-                        disabled={savingCategoryId === m.id}
-                        onClick={cancelCategoryEdit}
-                        className="px-2 py-1 rounded-md bg-white/5 text-gray-300 hover:bg-white/10 disabled:opacity-50 transition-colors"
-                      >
-                        취소
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <span className="px-2 py-1 rounded-md bg-white/5 text-gray-300">
+          <div className="overflow-x-auto rounded-xl border border-white/10">
+            <table className="w-full min-w-[960px] border-collapse text-left">
+              <thead>
+                <tr className="bg-[#1e293b] border-b border-white/10">
+                  <th className={thClass}>#</th>
+                  <th className={`${thClass} min-w-[200px]`}>질문</th>
+                  <th className={thClass}>카테고리</th>
+                  <th className={thClass}>상태</th>
+                  <th className={thClass}>YES% / NO%</th>
+                  <th className={thClass}>
+                    <button
+                      type="button"
+                      onClick={toggleEndDateSort}
+                      className="inline-flex items-center gap-1 hover:text-white transition-colors"
+                    >
+                      마감일
+                      <span className="text-gray-500">
+                        {endDateSort === 'asc' ? '↑' : '↓'}
+                      </span>
+                    </button>
+                  </th>
+                  <th className={`${thClass} text-center`}>속보</th>
+                  <th className={thClass}>결과</th>
+                  <th className={`${thClass} min-w-[200px]`}>액션</th>
+                </tr>
+              </thead>
+              <tbody>
+                {displayMarkets.map((m, index) => {
+                  const displayStatus = getAdminMarketStatus(m);
+                  const isSettled = displayStatus === 'settled';
+                  const isEditingEndDate = editingEndDateId === m.id;
+                  const isSettleExpanded = expandSettleId === m.id;
+
+                  return (
+                    <tr
+                      key={m.id}
+                      className={`border-b border-white/5 ${
+                        index % 2 === 0 ? 'bg-[#111827]' : 'bg-[#0f172a]'
+                      }`}
+                    >
+                      <td className={`${tdClass} text-gray-500 tabular-nums`}>
+                        {m.id}
+                      </td>
+                      <td className={tdClass}>
+                        <p
+                          className="max-w-[280px] truncate text-white font-medium"
+                          title={m.question}
+                        >
+                          {m.question}
+                        </p>
+                      </td>
+                      <td className={`${tdClass} whitespace-nowrap text-xs`}>
                         {m.category}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => startCategoryEdit(m)}
-                        className="px-2 py-1 rounded-md bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
-                      >
-                        수정
-                      </button>
-                    </>
-                  )}
-                  <span
-                    className={`px-2 py-1 rounded-md ${
-                      m.status === 'active'
-                        ? 'bg-emerald-950/50 text-emerald-400'
-                        : 'bg-gray-800 text-gray-400'
-                    }`}
-                  >
-                    {m.status}
-                  </span>
-                  <span className="px-2 py-1 rounded-md bg-white/5 text-gray-300">
-                    결과: {m.result ?? '—'}
-                  </span>
-                </div>
-                <p className="text-sm text-gray-500">
-                  YES {m.yes_percent}% · NO {m.no_percent}%
-                </p>
-                <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-300">
-                  <input
-                    type="checkbox"
-                    checked={Boolean(m.is_breaking)}
-                    disabled={savingBreakingId === m.id}
-                    onChange={(e) => handleToggleBreaking(m.id, e.target.checked)}
-                    className="w-4 h-4 rounded border-white/20 bg-[#0a0f1e] text-emerald-600 focus:ring-emerald-500/50 disabled:opacity-50"
-                  />
-                  <span>🔥 속보 마켓으로 지정</span>
-                </label>
-                <div className="flex flex-wrap items-center gap-2 text-xs">
-                  {editingEndDateId === m.id ? (
-                    <>
-                      <input
-                        type="datetime-local"
-                        value={editEndDate}
-                        onChange={(e) => setEditEndDate(e.target.value)}
-                        className="rounded-md bg-[#0a0f1e] border border-white/15 px-2 py-1 text-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
-                      />
-                      <button
-                        type="button"
-                        disabled={savingEndDateId === m.id}
-                        onClick={() => handleSaveEndDate(m.id)}
-                        className="px-2 py-1 rounded-md bg-emerald-600 text-white hover:bg-emerald-500 disabled:opacity-50 transition-colors"
-                      >
-                        {savingEndDateId === m.id ? '저장 중...' : '저장'}
-                      </button>
-                      <button
-                        type="button"
-                        disabled={savingEndDateId === m.id}
-                        onClick={cancelEndDateEdit}
-                        className="px-2 py-1 rounded-md bg-white/5 text-gray-300 hover:bg-white/10 disabled:opacity-50 transition-colors"
-                      >
-                        취소
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <span className="px-2 py-1 rounded-md bg-white/5 text-gray-300">
-                        마감: {formatEndDateDisplay(m.end_date)}
-                        {isMarketExpiredByEndDate(m.end_date) ? ' (경과)' : ''}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => startEndDateEdit(m)}
-                        className="px-2 py-1 rounded-md bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
-                      >
-                        마감일 수정
-                      </button>
-                    </>
-                  )}
-                </div>
-                {m.status === 'active' ? (
-                  <div className="flex gap-3 pt-1">
-                    <button
-                      type="button"
-                      disabled={resolvingId === m.id}
-                      onClick={() => handleResolve(m.id, 'YES')}
-                      className="flex-1 py-2 rounded-lg font-semibold text-sm bg-emerald-600 border border-emerald-400 text-white hover:bg-emerald-500 disabled:opacity-50 transition-all"
-                    >
-                      YES
-                    </button>
-                    <button
-                      type="button"
-                      disabled={resolvingId === m.id}
-                      onClick={() => handleResolve(m.id, 'NO')}
-                      className="flex-1 py-2 rounded-lg font-semibold text-sm bg-red-600 border border-red-400 text-white hover:bg-red-500 disabled:opacity-50 transition-all"
-                    >
-                      NO
-                    </button>
-                  </div>
-                ) : null}
-                <div className="pt-2 border-t border-white/10">
-              <button
-                type="button"
-                onClick={() => handleDelete(m.id, m.question)}
-                className="w-full py-1.5 rounded-lg text-xs font-medium text-red-400 border border-red-900/50 hover:bg-red-950/50 transition-colors"
-              >
-                🗑️ 마켓 삭제
-              </button>
-            </div>
-              </div>
-            ))}
+                      </td>
+                      <td className={tdClass}>
+                        <StatusBadge status={displayStatus} />
+                      </td>
+                      <td className={`${tdClass} whitespace-nowrap tabular-nums text-xs`}>
+                        <span className="text-emerald-400">YES {m.yes_percent}%</span>
+                        <span className="text-gray-600 mx-1">/</span>
+                        <span className="text-red-400">NO {m.no_percent}%</span>
+                      </td>
+                      <td className={`${tdClass} whitespace-nowrap text-xs tabular-nums`}>
+                        {formatAdminEndDate(m.end_date)}
+                      </td>
+                      <td className={`${tdClass} text-center`}>
+                        {m.is_breaking ? (
+                          <span title="속보">🔥</span>
+                        ) : (
+                          <span className="text-gray-600">—</span>
+                        )}
+                      </td>
+                      <td className={`${tdClass} whitespace-nowrap text-xs`}>
+                        {m.result === 'YES' ? (
+                          <span className="text-emerald-400">YES</span>
+                        ) : m.result === 'NO' ? (
+                          <span className="text-red-400">NO</span>
+                        ) : (
+                          <span className="text-gray-500">미정</span>
+                        )}
+                      </td>
+                      <td className={tdClass}>
+                        {isEditingEndDate ? (
+                          <div className="flex flex-wrap items-center gap-1">
+                            <input
+                              type="datetime-local"
+                              value={editEndDate}
+                              onChange={(e) => setEditEndDate(e.target.value)}
+                              className="rounded bg-[#0a0f1e] border border-white/15 px-1.5 py-1 text-gray-200 text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500/50"
+                            />
+                            <button
+                              type="button"
+                              disabled={savingEndDateId === m.id}
+                              onClick={() => handleSaveEndDate(m.id)}
+                              className="px-2 py-1 rounded text-xs bg-emerald-600 text-white hover:bg-emerald-500 disabled:opacity-50"
+                            >
+                              저장
+                            </button>
+                            <button
+                              type="button"
+                              disabled={savingEndDateId === m.id}
+                              onClick={cancelEndDateEdit}
+                              className="px-2 py-1 rounded text-xs bg-white/5 text-gray-300 hover:bg-white/10"
+                            >
+                              취소
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex flex-wrap items-center gap-1">
+                            {isSettleExpanded ? (
+                              <>
+                                <button
+                                  type="button"
+                                  disabled={resolvingId === m.id}
+                                  onClick={() => handleResolve(m.id, 'YES')}
+                                  className="px-2 py-1 rounded text-xs font-medium bg-emerald-600/80 text-white hover:bg-emerald-500 disabled:opacity-50"
+                                >
+                                  YES
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={resolvingId === m.id}
+                                  onClick={() => handleResolve(m.id, 'NO')}
+                                  className="px-2 py-1 rounded text-xs font-medium bg-red-600/80 text-white hover:bg-red-500 disabled:opacity-50"
+                                >
+                                  NO
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setExpandSettleId(null)}
+                                  className="px-2 py-1 rounded text-xs bg-white/5 text-gray-300 hover:bg-white/10"
+                                >
+                                  취소
+                                </button>
+                              </>
+                            ) : (
+                              <button
+                                type="button"
+                                disabled={isSettled}
+                                onClick={() => {
+                                  setExpandSettleId(m.id);
+                                  setEditingEndDateId(null);
+                                }}
+                                className="px-2 py-1 rounded text-xs font-medium border border-white/15 text-gray-200 hover:bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed disabled:text-gray-500"
+                              >
+                                정산
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => startEndDateEdit(m)}
+                              className="px-2 py-1 rounded text-xs font-medium border border-white/15 text-gray-300 hover:bg-white/5"
+                            >
+                              마감일수정
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDelete(m.id)}
+                              className="px-2 py-1 rounded text-xs font-medium border border-red-900/50 text-red-400 hover:bg-red-950/40"
+                            >
+                              삭제
+                            </button>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         )}
       </section>
