@@ -3,7 +3,6 @@ import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AppHeader } from '@/components/AppHeader';
 import { BottomNav, type BottomNavTab } from '@/components/BottomNav';
-import { MarketOddsGauge } from '@/components/MarketOddsGauge';
 import { getCategoryStyle, MARKET_CATEGORIES, NO_COLOR, YES_COLOR } from '@/lib/categories';
 import {
   isMarketActiveForFilter,
@@ -231,12 +230,14 @@ export default function Home() {
             const showNew = isNewMarket(m.created_at);
 
             return (
-              <Link
+              <div
                 key={m.id}
-                href={`/market/${m.id}`}
-                className="block bg-[#111827] border border-white/10 rounded-xl p-4 cursor-pointer transition-all hover:border-white/20 hover:bg-[#151d32] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#34d399]/40"
+                className="bg-[#111827] border border-white/10 rounded-xl p-4 transition-all hover:border-white/20 hover:bg-[#151d32]"
               >
-                <div className="flex items-center gap-3">
+                <Link
+                  href={`/market/${m.id}`}
+                  className="flex items-center gap-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#34d399]/40 rounded-lg"
+                >
                   <div
                     className="shrink-0 w-16 h-16 rounded-lg flex items-center justify-center"
                     style={{ background: gradient }}
@@ -312,13 +313,41 @@ export default function Home() {
                       </div>
                     )}
                   </div>
+                </Link>
 
-                  <MarketOddsGauge
-                    yesPercent={m.yes_percent}
-                    noPercent={m.no_percent}
-                  />
+                <div className="flex gap-2 mt-3 w-full">
+                  <Link
+                    href={`/market/${m.id}?side=yes`}
+                    className="flex-1 text-center transition-opacity hover:opacity-90"
+                    style={{
+                      background: 'rgba(52,211,153,0.15)',
+                      border: '1px solid rgba(52,211,153,0.4)',
+                      color: YES_COLOR,
+                      borderRadius: 8,
+                      padding: 8,
+                      fontSize: 13,
+                      fontWeight: 600,
+                    }}
+                  >
+                    YES {m.yes_percent}%
+                  </Link>
+                  <Link
+                    href={`/market/${m.id}?side=no`}
+                    className="flex-1 text-center transition-opacity hover:opacity-90"
+                    style={{
+                      background: 'rgba(248,113,113,0.15)',
+                      border: '1px solid rgba(248,113,113,0.4)',
+                      color: NO_COLOR,
+                      borderRadius: 8,
+                      padding: 8,
+                      fontSize: 13,
+                      fontWeight: 600,
+                    }}
+                  >
+                    NO {m.no_percent}%
+                  </Link>
                 </div>
-              </Link>
+              </div>
             );
           })}
         </div>

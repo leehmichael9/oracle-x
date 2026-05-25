@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { isMarketEnded, isMarketSettled } from '@/lib/market';
 import { supabase } from '@/lib/supabase';
@@ -26,6 +26,7 @@ type Choice = 'YES' | 'NO';
 
 export default function MarketBetPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const idParam = params.id as string;
   const { userId } = useTelegramUser();
 
@@ -81,6 +82,17 @@ export default function MarketBetPage() {
     loadMarket();
     loadBalance();
   }, [loadMarket, loadBalance]);
+
+  useEffect(() => {
+    const side = searchParams.get('side');
+    if (side === 'yes') {
+      setChoice('YES');
+      setSuccess(false);
+    } else if (side === 'no') {
+      setChoice('NO');
+      setSuccess(false);
+    }
+  }, [searchParams]);
 
   const pointsNum = Number(points);
   const pointsValid =
