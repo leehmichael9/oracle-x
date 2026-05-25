@@ -19,6 +19,7 @@ type Market = {
   status: string;
   result: string | null;
   end_date: string | null;
+  is_breaking: boolean;
 };
 
 
@@ -36,6 +37,8 @@ export default function AdminPage() {
   const [yesPercent, setYesPercent] = useState('');
   const [noPercent, setNoPercent] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [isBreaking, setIsBreaking] = useState(false);
+  const [savingBreakingId, setSavingBreakingId] = useState<number | null>(null);
   const [editingEndDateId, setEditingEndDateId] = useState<number | null>(null);
   const [editEndDate, setEditEndDate] = useState('');
   const [savingEndDateId, setSavingEndDateId] = useState<number | null>(null);
@@ -104,6 +107,7 @@ export default function AdminPage() {
         status: 'active',
         result: null,
         end_date: endDateIso,
+        is_breaking: isBreaking,
       });
 
       if (error) {
@@ -116,6 +120,7 @@ export default function AdminPage() {
       setYesPercent('');
       setNoPercent('');
       setEndDate('');
+      setIsBreaking(false);
       setFormSuccess(true);
       await fetch('/api/notify', {
         method: 'POST',
@@ -240,6 +245,25 @@ export default function AdminPage() {
     }
   }
 
+  async function handleToggleBreaking(marketId: number, nextValue: boolean) {
+    setSavingBreakingId(marketId);
+    try {
+      const { error } = await supabase
+        .from('markets')
+        .update({ is_breaking: nextValue })
+        .eq('id', marketId);
+
+      if (error) {
+        alert('속보 설정 저장에 실패했습니다: ' + error.message);
+        return;
+      }
+
+      await loadMarkets();
+    } finally {
+      setSavingBreakingId(null);
+    }
+  }
+
   async function handleSaveCategory(marketId: number) {
     setSavingCategoryId(marketId);
     setCategoryEditError(null);
@@ -333,6 +357,19 @@ export default function AdminPage() {
               className="w-full rounded-lg bg-[#0a0f1e] border border-white/15 px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50"
             />
           </div>
+
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={isBreaking}
+              onChange={(e) => {
+                setIsBreaking(e.target.checked);
+                setFormSuccess(false);
+              }}
+              className="w-4 h-4 rounded border-white/20 bg-[#0a0f1e] text-emerald-600 focus:ring-emerald-500/50"
+            />
+            <span className="text-sm text-gray-300">🔥 속보 마켓으로 지정</span>
+          </label>
 
           <div className="flex gap-4">
             <div className="flex-1">
@@ -488,6 +525,16 @@ export default function AdminPage() {
                 <p className="text-sm text-gray-500">
                   YES {m.yes_percent}% · NO {m.no_percent}%
                 </p>
+                <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-300">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(m.is_breaking)}
+                    disabled={savingBreakingId === m.id}
+                    onChange={(e) => handleToggleBreaking(m.id, e.target.checked)}
+                    className="w-4 h-4 rounded border-white/20 bg-[#0a0f1e] text-emerald-600 focus:ring-emerald-500/50 disabled:opacity-50"
+                  />
+                  <span>🔥 속보 마켓으로 지정</span>
+                </label>
                 <div className="flex flex-wrap items-center gap-2 text-xs">
                   {editingEndDateId === m.id ? (
                     <>

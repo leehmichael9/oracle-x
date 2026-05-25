@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { AppHeader } from '@/components/AppHeader';
-import { MARKET_CATEGORIES } from '@/lib/categories';
+import { getCategoryStyle, MARKET_CATEGORIES } from '@/lib/categories';
 import {
   isMarketActiveForFilter,
   isMarketClosedForFilter,
@@ -27,6 +27,7 @@ type Market = {
   result: 'YES' | 'NO' | null;
   created_at: string;
   end_date: string | null;
+  is_breaking: boolean | null;
 };
 
 function isNewMarket(createdAt: string | undefined): boolean {
@@ -163,45 +164,77 @@ export default function Home() {
             <p className="text-gray-400 text-center py-8">해당 조건의 마켓이 없습니다.</p>
           ) : null}
 
-          {filteredMarkets.map((m) => (
-            <Link
-              key={m.id}
-              href={`/market/${m.id}`}
-              className="block bg-[#111827] border border-white/10 rounded-xl p-5 cursor-pointer transition-all hover:border-white/20 hover:bg-[#151d32] focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/60"
-            >
-              <p className="text-white text-center mb-3">{m.question}</p>
-              <div className="flex justify-between text-sm mb-1">
-                <span className="text-emerald-400">YES {m.yes_percent}%</span>
-                <span className="text-red-400">NO {m.no_percent}%</span>
-              </div>
-              <div className="flex rounded-full overflow-hidden h-2">
-                <div className="bg-emerald-500" style={{ width: `${m.yes_percent}%` }}></div>
-                <div className="bg-red-500" style={{ width: `${m.no_percent}%` }}></div>
-              </div>
-              {isMarketEnded(m) && (
-                <div
-                  className={`text-xs font-bold px-2 py-1 rounded-lg text-center mt-1 ${
-                    isMarketSettled(m)
-                      ? m.result === 'YES'
-                        ? 'bg-emerald-500/20 text-emerald-400'
-                        : 'bg-red-500/20 text-red-400'
-                      : 'bg-gray-800/80 text-gray-400'
-                  }`}
-                >
-                  {isMarketSettled(m)
-                    ? m.result === 'YES'
-                      ? '✅ 종료 · YES'
-                      : '❌ 종료 · NO'
-                    : '⏱️ 마감 · 베팅 종료'}
+          {filteredMarkets.map((m) => {
+            const { emoji, bgColor } = getCategoryStyle(m.category);
+            const showBreaking = Boolean(m.is_breaking);
+            const showNew = isNewMarket(m.created_at);
+
+            return (
+              <Link
+                key={m.id}
+                href={`/market/${m.id}`}
+                className="relative block bg-[#111827] border border-white/10 rounded-xl p-4 cursor-pointer transition-all hover:border-white/20 hover:bg-[#151d32] focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/60"
+              >
+                {(showBreaking || showNew) && (
+                  <div className="absolute top-3 right-3 flex items-center gap-1.5">
+                    {showBreaking ? (
+                      <span className="text-xs font-medium text-orange-400">🔥 속보</span>
+                    ) : null}
+                    {showNew ? (
+                      <span className="text-xs font-medium text-amber-400">🆕 신규</span>
+                    ) : null}
+                  </div>
+                )}
+
+                <div className="flex gap-3">
+                  <div
+                    className="shrink-0 w-16 h-16 rounded-lg flex items-center justify-center"
+                    style={{ backgroundColor: bgColor, fontSize: '28px' }}
+                    aria-hidden
+                  >
+                    {emoji}
+                  </div>
+
+                  <div className="flex-1 min-w-0 pr-14">
+                    <p className="text-white text-sm font-medium leading-snug mb-2 line-clamp-2">
+                      {m.question}
+                    </p>
+                    <div className="flex justify-between text-xs mb-1">
+                      <span className="text-emerald-400">YES {m.yes_percent}%</span>
+                      <span className="text-red-400">NO {m.no_percent}%</span>
+                    </div>
+                    <div className="flex rounded-full overflow-hidden h-2">
+                      <div
+                        className="bg-emerald-500"
+                        style={{ width: `${m.yes_percent}%` }}
+                      />
+                      <div
+                        className="bg-red-500"
+                        style={{ width: `${m.no_percent}%` }}
+                      />
+                    </div>
+                    {isMarketEnded(m) && (
+                      <div
+                        className={`text-xs font-bold px-2 py-1 rounded-lg text-center mt-2 ${
+                          isMarketSettled(m)
+                            ? m.result === 'YES'
+                              ? 'bg-emerald-500/20 text-emerald-400'
+                              : 'bg-red-500/20 text-red-400'
+                            : 'bg-gray-800/80 text-gray-400'
+                        }`}
+                      >
+                        {isMarketSettled(m)
+                          ? m.result === 'YES'
+                            ? '✅ 종료 · YES'
+                            : '❌ 종료 · NO'
+                          : '⏱️ 마감 · 베팅 종료'}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              )}
-              {isNewMarket(m.created_at) ? (
-                <span className="inline-block mt-2 text-xs font-medium text-amber-400">
-                  🆕 신규
-                </span>
-              ) : null}
-            </Link>
-          ))}
+              </Link>
+            );
+          })}
         </div>
       )}
     </div>
