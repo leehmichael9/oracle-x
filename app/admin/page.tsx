@@ -2,11 +2,7 @@
 
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import {
-  ADMIN_CATEGORY_FILTER_OPTIONS,
-  MARKET_CATEGORIES,
-  normalizeCategory,
-} from '@/lib/categories';
+import { MARKET_CATEGORIES, normalizeCategory } from '@/lib/categories';
 import { isMarketExpiredByEndDate, toDatetimeLocalValue } from '@/lib/market';
 import { supabase } from '@/lib/supabase';
 
@@ -14,6 +10,7 @@ type Market = {
   id: number;
   question: string;
   category: string;
+  sub_category: string | null;
   yes_percent: number;
   no_percent: number;
   status: string;
@@ -80,6 +77,7 @@ export default function AdminPage() {
 
   const [question, setQuestion] = useState('');
   const [category, setCategory] = useState<string>(MARKET_CATEGORIES[0]);
+  const [subCategory, setSubCategory] = useState('');
   const [yesPercent, setYesPercent] = useState('50');
   const [noPercent, setNoPercent] = useState('50');
   const [endDate, setEndDate] = useState('');
@@ -88,6 +86,10 @@ export default function AdminPage() {
   const [editEndDate, setEditEndDate] = useState('');
   const [savingEndDateId, setSavingEndDateId] = useState<number | null>(null);
   const [endDateEditError, setEndDateEditError] = useState<string | null>(null);
+  const [editingSubCategoryId, setEditingSubCategoryId] = useState<number | null>(null);
+  const [editSubCategory, setEditSubCategory] = useState('');
+  const [savingSubCategoryId, setSavingSubCategoryId] = useState<number | null>(null);
+  const [subCategoryEditError, setSubCategoryEditError] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [formSuccess, setFormSuccess] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -96,7 +98,22 @@ export default function AdminPage() {
 
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('전체');
+  const [subCategoryFilter, setSubCategoryFilter] = useState<string>('전체');
   const [endDateSort, setEndDateSort] = useState<EndDateSort>('asc');
+
+  const subCategoryOptions = useMemo(() => {
+    if (categoryFilter === '전체') return [];
+    const subs = new Set<string>();
+    for (const m of markets) {
+      if (
+        normalizeCategory(m.category) === categoryFilter &&
+        m.sub_category?.trim()
+      ) {
+        subs.add(m.sub_category.trim());
+      }
+    }
+    return Array.from(subs).sort((a, b) => a.localeCompare(b, 'ko'));
+  }, [markets, categoryFilter]);
 
   const loadMarkets = useCallback(async () => {
     setListLoading(true);
@@ -125,6 +142,9 @@ export default function AdminPage() {
         (m) => normalizeCategory(m.category) === categoryFilter,
       );
     }
+    if (subCategoryFilter !== '전체') {
+      list = list.filter((m) => (m.sub_category?.trim() ?? '') === subCategoryFilter);
+    }
 
     list.sort((a, b) => {
       const ta = a.end_date ? new Date(a.end_date).getTime() : 0;
@@ -133,7 +153,7 @@ export default function AdminPage() {
     });
 
     return list;
-  }, [markets, statusFilter, categoryFilter, endDateSort]);
+  }, [markets, statusFilter, categoryFilter, subCategoryFilter, endDateSort]);
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
@@ -172,6 +192,7 @@ export default function AdminPage() {
       const { error } = await supabase.from('markets').insert({
         question: trimmedQuestion,
         category,
+        sub_category: subCategory.trim() || null,
         yes_percent: yes,
         no_percent: no,
         status: 'active',
@@ -187,6 +208,7 @@ export default function AdminPage() {
 
       setQuestion('');
       setCategory(MARKET_CATEGORIES[0]);
+      setSubCategory('');
       setYesPercent('50');
       setNoPercent('50');
       setEndDate('');
@@ -261,9 +283,46 @@ export default function AdminPage() {
     await loadMarkets();
   }
 
+  function startSubCategoryEdit(market: Market) {
+    setSubCategoryEditError(null);
+    setExpandSettleId(null);
+    setEditingEndDateId(null);
+    setEditingSubCategoryId(market.id);
+    setEditSubCategory(market.sub_category ?? '');
+  }
+
+  function cancelSubCategoryEdit() {
+    setEditingSubCategoryId(null);
+    setSubCategoryEditError(null);
+  }
+
+  async function handleSaveSubCategory(marketId: number) {
+    setSavingSubCategoryId(marketId);
+    setSubCategoryEditError(null);
+    try {
+      const value = editSubCategory.trim() || null;
+      const { error } = await supabase
+        .from('markets')
+        .update({ sub_category: value })
+        .eq('id', marketId);
+
+      if (error) {
+        setSubCategoryEditError(error.message ?? '세분류 저장에 실패했습니다.');
+        return;
+      }
+
+      setEditingSubCategoryId(null);
+      await loadMarkets();
+    } finally {
+      setSavingSubCategoryId(null);
+    }
+  }
+
   function startEndDateEdit(market: Market) {
     setEndDateEditError(null);
+    setSubCategoryEditError(null);
     setExpandSettleId(null);
+    setEditingSubCategoryId(null);
     setEditingEndDateId(market.id);
     setEditEndDate(toDatetimeLocalValue(market.end_date));
   }
@@ -350,7 +409,7 @@ export default function AdminPage() {
 
           <div>
             <label htmlFor="category" className="block text-sm text-gray-400 mb-2">
-              카테고리
+              카테고리 (대분류)
             </label>
             <select
               id="category"
@@ -367,6 +426,23 @@ export default function AdminPage() {
                 </option>
               ))}
             </select>
+          </div>
+
+          <div>
+            <label htmlFor="sub_category" className="block text-sm text-gray-400 mb-2">
+              세분류 <span className="text-gray-600">(선택)</span>
+            </label>
+            <input
+              id="sub_category"
+              type="text"
+              value={subCategory}
+              onChange={(e) => {
+                setSubCategory(e.target.value);
+                setFormSuccess(false);
+              }}
+              placeholder="세분류 입력 (예: XRP, 국내정치, FOMC·금리)"
+              className="w-full rounded-lg bg-[#0a0f1e] border border-white/15 px-4 py-3 text-white placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50"
+            />
           </div>
 
           <div>
@@ -475,6 +551,11 @@ export default function AdminPage() {
             {endDateEditError}
           </p>
         ) : null}
+        {subCategoryEditError ? (
+          <p className="text-sm text-red-400 bg-red-950/30 border border-red-900/50 rounded-lg px-3 py-2 mb-4">
+            {subCategoryEditError}
+          </p>
+        ) : null}
 
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
           <div className="flex flex-wrap gap-1.5">
@@ -495,13 +576,29 @@ export default function AdminPage() {
           </div>
           <select
             value={categoryFilter}
-            onChange={(e) => setCategoryFilter(e.target.value)}
+            onChange={(e) => {
+              setCategoryFilter(e.target.value);
+              setSubCategoryFilter('전체');
+            }}
             className="rounded-lg bg-[#111827] border border-white/10 px-3 py-1.5 text-sm text-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
           >
-            <option value="전체">카테고리: 전체</option>
-            {ADMIN_CATEGORY_FILTER_OPTIONS.map((c) => (
+            <option value="전체">대분류: 전체</option>
+            {MARKET_CATEGORIES.map((c) => (
               <option key={c} value={c}>
-                {normalizeCategory(c)}
+                {c}
+              </option>
+            ))}
+          </select>
+          <select
+            value={subCategoryFilter}
+            onChange={(e) => setSubCategoryFilter(e.target.value)}
+            disabled={categoryFilter === '전체'}
+            className="rounded-lg bg-[#111827] border border-white/10 px-3 py-1.5 text-sm text-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <option value="전체">세분류: 전체</option>
+            {subCategoryOptions.map((sub) => (
+              <option key={sub} value={sub}>
+                {sub}
               </option>
             ))}
           </select>
@@ -548,6 +645,7 @@ export default function AdminPage() {
                   const displayStatus = getAdminMarketStatus(m);
                   const isSettled = displayStatus === 'settled';
                   const isEditingEndDate = editingEndDateId === m.id;
+                  const isEditingSubCategory = editingSubCategoryId === m.id;
                   const isSettleExpanded = expandSettleId === m.id;
 
                   return (
@@ -568,8 +666,52 @@ export default function AdminPage() {
                           {m.question}
                         </p>
                       </td>
-                      <td className={`${tdClass} whitespace-nowrap text-xs`}>
-                        {normalizeCategory(m.category)}
+                      <td className={`${tdClass} text-xs min-w-[100px]`}>
+                        {isEditingSubCategory ? (
+                          <div className="flex flex-col gap-1">
+                            <input
+                              type="text"
+                              value={editSubCategory}
+                              onChange={(e) => setEditSubCategory(e.target.value)}
+                              placeholder="세분류"
+                              className="w-full min-w-[120px] rounded bg-[#0a0f1e] border border-white/15 px-1.5 py-1 text-gray-200 text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500/50"
+                            />
+                            <div className="flex gap-1">
+                              <button
+                                type="button"
+                                disabled={savingSubCategoryId === m.id}
+                                onClick={() => handleSaveSubCategory(m.id)}
+                                className="px-2 py-0.5 rounded text-xs bg-emerald-600 text-white hover:bg-emerald-500 disabled:opacity-50"
+                              >
+                                저장
+                              </button>
+                              <button
+                                type="button"
+                                disabled={savingSubCategoryId === m.id}
+                                onClick={cancelSubCategoryEdit}
+                                className="px-2 py-0.5 rounded text-xs bg-white/5 text-gray-300 hover:bg-white/10"
+                              >
+                                취소
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => startSubCategoryEdit(m)}
+                            className="text-left rounded p-1 -m-1 hover:bg-white/5 transition-colors"
+                            title="클릭하여 세분류 수정"
+                          >
+                            <div className="text-gray-200 whitespace-nowrap">
+                              {normalizeCategory(m.category)}
+                            </div>
+                            {m.sub_category?.trim() ? (
+                              <div className="text-[10px] text-gray-500 mt-0.5 whitespace-nowrap">
+                                {m.sub_category.trim()}
+                              </div>
+                            ) : null}
+                          </button>
+                        )}
                       </td>
                       <td className={tdClass}>
                         <StatusBadge status={displayStatus} />
@@ -659,12 +801,20 @@ export default function AdminPage() {
                                 onClick={() => {
                                   setExpandSettleId(m.id);
                                   setEditingEndDateId(null);
+                                  setEditingSubCategoryId(null);
                                 }}
                                 className="px-2 py-1 rounded text-xs font-medium border border-white/15 text-gray-200 hover:bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed disabled:text-gray-500"
                               >
                                 정산
                               </button>
                             )}
+                            <button
+                              type="button"
+                              onClick={() => startSubCategoryEdit(m)}
+                              className="px-2 py-1 rounded text-xs font-medium border border-white/15 text-gray-300 hover:bg-white/5"
+                            >
+                              세분류수정
+                            </button>
                             <button
                               type="button"
                               onClick={() => startEndDateEdit(m)}
