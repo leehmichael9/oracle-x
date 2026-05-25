@@ -1,6 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
+import { AppHeader } from '@/components/AppHeader';
 import { MARKET_CATEGORIES } from '@/lib/categories';
 import { supabase } from '@/lib/supabase';
 import { useTelegramUser } from '@/lib/useTelegramUser';
@@ -24,6 +25,7 @@ export default function Home() {
   const [points, setPoints] = useState<number | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('전체');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('active');
+  const [showMyInfo, setShowMyInfo] = useState(false);
   const { userId, loading: userLoading } = useTelegramUser();
 
   const filteredMarkets = useMemo(() => {
@@ -58,20 +60,15 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-[#0a0f1e] flex flex-col items-center py-4 px-4">
-      <h1 className="text-4xl font-bold text-white tracking-widest mb-2">ORACLE-X</h1>
-      <p className="text-gray-400 mb-3">Asia's Crypto Prediction Market</p>
-      {userId && points !== null && (
-  <div className="bg-[#111827] border border-emerald-500/30 rounded-xl px-5 py-3 mb-4 flex items-center justify-between w-full max-w-xl">
-    <span className="text-gray-400 text-sm">💰 보유 포인트</span>
-    <span className="text-emerald-400 font-bold text-lg">{points.toLocaleString()} P</span>
-  </div>
-)}
-      <Link
-        href="/leaderboard"
-        className="mb-4 px-5 py-2.5 rounded-xl text-sm font-semibold border border-white/15 text-white bg-[#111827] hover:bg-[#151d32] hover:border-white/25 transition-all"
-      >
-        리더보드
-      </Link>
+      <AppHeader
+        showMyInfo={showMyInfo}
+        onToggleMyInfo={() => setShowMyInfo((v) => !v)}
+        points={points}
+        pointsLoading={userLoading || (Boolean(userId) && points === null)}
+      />
+      <p className="text-gray-400 text-sm mb-4 w-full max-w-xl">
+        Asia&apos;s Crypto Prediction Market
+      </p>
       {loading || userLoading ? (
         <p className="text-gray-400">로딩 중...</p>
       ) : (
