@@ -5,9 +5,54 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { AppHeader } from '@/components/AppHeader';
 import { BottomNav, type BottomNavTab } from '@/components/BottomNav';
+import { NO_COLOR, YES_COLOR } from '@/lib/categories';
 import { buildInviteLink } from '@/lib/referral';
 import { supabase } from '@/lib/supabase';
 import { useTelegramUser } from '@/lib/useTelegramUser';
+
+type PointHistoryItem = {
+  amount: number;
+  reason: string;
+  created_at: string;
+};
+
+const REASON_LABELS: Record<string, string> = {
+  quiz_correct: '🧩 퀴즈 정답',
+  referral_signup: '👥 친구 초대 가입',
+  referral_bet_completed: '👥 친구 첫 베팅',
+  bet_win: '🏆 베팅 적중',
+  signup_bonus: '🎁 가입 보너스',
+  daily_checkin: '📅 출석 체크',
+};
+
+function getTelegramId(): string {
+  const tg = (window as Window & { Telegram?: { WebApp?: TelegramWebApp } })
+    .Telegram?.WebApp;
+  if (tg?.initDataUnsafe?.user) {
+    return String(tg.initDataUnsafe.user.id);
+  }
+  return 'test_user_001';
+}
+
+function getReasonLabel(reason: string): string {
+  return REASON_LABELS[reason] ?? '📌 기타';
+}
+
+function formatTransactionDate(iso: string): string {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Seoul',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).formatToParts(new Date(iso));
+
+  const get = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((p) => p.type === type)?.value ?? '00';
+
+  return `${get('month')}.${get('day')} ${get('hour')}:${get('minute')}`;
+}
 
 type ReferralStats = {
   referral_code: string;
@@ -23,6 +68,8 @@ export default function ProfilePage() {
   const [statsLoading, setStatsLoading] = useState(true);
   const [copyToast, setCopyToast] = useState(false);
   const [navTab] = useState<BottomNavTab>('profile');
+  const [pointHistory, setPointHistory] = useState<PointHistoryItem[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(true);
 
   const loadPoints = useCallback(async () => {
     if (!userId) return;
@@ -33,6 +80,26 @@ export default function ProfilePage() {
       .single();
     if (data) setPoints(data.points ?? 0);
   }, [userId]);
+
+  const loadPointHistory = useCallback(async () => {
+    setHistoryLoading(true);
+    try {
+      const telegramId = getTelegramId();
+      const res = await fetch(
+        `/api/user/points-history?telegram_id=${encodeURIComponent(telegramId)}`,
+      );
+      const data = await res.json();
+      if (data.ok && Array.isArray(data.items)) {
+        setPointHistory(data.items);
+      } else {
+        setPointHistory([]);
+      }
+    } catch {
+      setPointHistory([]);
+    } finally {
+      setHistoryLoading(false);
+    }
+  }, []);
 
   const loadStats = useCallback(async () => {
     if (!userId) return;
@@ -55,7 +122,8 @@ export default function ProfilePage() {
   useEffect(() => {
     loadPoints();
     loadStats();
-  }, [loadPoints, loadStats]);
+    loadPointHistory();
+  }, [loadPoints, loadStats, loadPointHistory]);
 
   const inviteLink = stats?.referral_code
     ? buildInviteLink(stats.referral_code)
@@ -97,6 +165,51 @@ export default function ProfilePage() {
               </span>
             )}
           </div>
+        </section>
+
+        <section className="bg-[#111827] border border-white/10 rounded-xl p-5 space-y-3">
+          <h2 className="text-sm font-semibold text-white">포인트 내역</h2>
+
+          {historyLoading ? (
+            <p className="text-sm text-gray-400">로딩 중...</p>
+          ) : pointHistory.length === 0 ? (
+            <p className="text-sm text-gray-500">아직 포인트 내역이 없습니다</p>
+          ) : (
+            <ul
+              className="space-y-2 overflow-y-auto pr-1"
+              style={{ maxHeight: 300 }}
+            >
+              {pointHistory.map((item, index) => {
+                const amount = item.amount ?? 0;
+                const isGain = amount >= 0;
+                const amountLabel = isGain
+                  ? `+${Math.abs(amount).toLocaleString()} P`
+                  : `-${Math.abs(amount).toLocaleString()} P`;
+
+                return (
+                  <li
+                    key={`${item.created_at}-${index}`}
+                    className="flex items-center justify-between gap-3 rounded-lg bg-[#0a0f1e] px-3 py-2.5 border border-white/5"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs text-gray-500 tabular-nums mb-0.5">
+                        {formatTransactionDate(item.created_at)}
+                      </p>
+                      <p className="text-sm text-gray-200 truncate">
+                        {getReasonLabel(item.reason)}
+                      </p>
+                    </div>
+                    <span
+                      className="text-sm font-semibold tabular-nums shrink-0"
+                      style={{ color: isGain ? YES_COLOR : NO_COLOR }}
+                    >
+                      {amountLabel}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
         </section>
 
         <section className="bg-[#111827] border border-white/10 rounded-xl p-5 space-y-4">
@@ -177,4 +290,12 @@ export default function ProfilePage() {
       />
     </div>
   );
+}
+
+interface TelegramWebApp {
+  initDataUnsafe?: {
+    user?: {
+      id: number;
+    };
+  };
 }
