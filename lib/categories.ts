@@ -21,9 +21,9 @@ export type CategoryStyle = {
 export const CATEGORY_STYLES: Record<MarketCategory, CategoryStyle> = {
   '정치/시사': { emoji: '🏛️', bgColor: '#1e3a5f' },
   지정학: { emoji: '🌍', bgColor: '#1a3a2a' },
-  크립토: { emoji: '₿', bgColor: '#1a2a1a' },
-  '경제/금융': { emoji: '📈', bgColor: '#1a1a3a' },
-  '테크/AI': { emoji: '🤖', bgColor: '#2a1a3a' },
+  크립토: { emoji: '🪙', bgColor: '#1a2a1a' },
+  '경제/금융': { emoji: '💹', bgColor: '#1a1a3a' },
+  '테크/AI': { emoji: '💻', bgColor: '#2a1a3a' },
   스포츠: { emoji: '⚽', bgColor: '#1a3a1a' },
   대중문화: { emoji: '🎬', bgColor: '#3a1a2a' },
   'K-엔터': { emoji: '🎤', bgColor: '#3a1a3a' },

@@ -189,10 +189,17 @@ export default function Home() {
                 <div className="flex gap-3">
                   <div
                     className="shrink-0 w-16 h-16 rounded-lg flex items-center justify-center"
-                    style={{ backgroundColor: bgColor, fontSize: '28px' }}
+                    style={{ backgroundColor: bgColor }}
                     aria-hidden
                   >
-                    {emoji}
+                    <span
+                      style={{
+                        fontSize: '28px',
+                        fontFamily: '"Segoe UI Emoji", "Apple Color Emoji", sans-serif',
+                      }}
+                    >
+                      {emoji}
+                    </span>
                   </div>
 
                   <div className="flex-1 min-w-0 pr-14">
