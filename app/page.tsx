@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AppHeader } from '@/components/AppHeader';
 import { BottomNav, type BottomNavTab } from '@/components/BottomNav';
@@ -39,13 +40,12 @@ function isNewMarket(createdAt: string | undefined): boolean {
 }
 
 export default function Home() {
+  const router = useRouter();
   const [markets, setMarkets] = useState<Market[]>([]);
   const [loading, setLoading] = useState(true);
-  const [points, setPoints] = useState<number | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('전체');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('active');
   const [searchQuery, setSearchQuery] = useState('');
-  const [showMyInfo, setShowMyInfo] = useState(false);
   const [breakingOnly, setBreakingOnly] = useState(false);
   const [navTab, setNavTab] = useState<BottomNavTab>('home');
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -66,7 +66,6 @@ export default function Home() {
   function handleNavHome() {
     setNavTab('home');
     setBreakingOnly(false);
-    setShowMyInfo(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
@@ -80,15 +79,11 @@ export default function Home() {
   function handleNavBreaking() {
     setNavTab('breaking');
     setBreakingOnly(true);
-    setShowMyInfo(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   function handleNavProfile() {
-    setNavTab('profile');
-    setBreakingOnly(false);
-    setShowMyInfo(true);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    router.push('/profile');
   }
 
   useEffect(() => {
@@ -99,34 +94,9 @@ export default function Home() {
     }
     load();
   }, []);
-  useEffect(() => {
-    if (!userId) return;
-    async function loadPoints() {
-      const { data } = await supabase
-        .from('users')
-        .select('points')
-        .eq('id', userId)
-        .single();
-      if (data) setPoints(data.points ?? 0);
-    }
-    loadPoints();
-  }, [userId]);
-
   return (
     <div className="min-h-screen bg-[#0a0f1e] flex flex-col items-center py-4 px-4 pb-20">
-      <AppHeader
-        showMyInfo={showMyInfo}
-        onToggleMyInfo={() => {
-          setShowMyInfo((prev) => {
-            const next = !prev;
-            setNavTab(next ? 'profile' : 'home');
-            setBreakingOnly(false);
-            return next;
-          });
-        }}
-        points={points}
-        pointsLoading={userLoading || (Boolean(userId) && points === null)}
-      />
+      <AppHeader />
       <p className="text-gray-400 text-sm mb-4 w-full max-w-xl">
         Asia&apos;s No.1 Prediction Market
       </p>

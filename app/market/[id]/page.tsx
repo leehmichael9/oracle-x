@@ -147,6 +147,12 @@ export default function MarketBetPage() {
       setBalance(data.remaining_points);
       setSuccess(true);
       loadMarket();
+
+      fetch('/api/referral/bet-completed', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: userId }),
+      }).catch(() => {});
     } finally {
       setSubmitting(false);
     }
