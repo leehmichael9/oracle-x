@@ -34,7 +34,11 @@ export async function awardPoints(
   });
 
   if (txErr) {
-    return { ok: false, error: txErr.message };
+    console.error('[points] point_transactions insert failed:', txErr);
+    return {
+      ok: false,
+      error: `${txErr.message} (hint: point_transactions 컬럼 user_id/amount/reason 확인)`,
+    };
   }
 
   return { ok: true };

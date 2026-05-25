@@ -14,7 +14,18 @@ export async function ensureUserReferralCode(
 ): Promise<string> {
   if (existingCode) return existingCode;
   const code = generateReferralCode(telegramId);
-  await admin.from('users').update({ referral_code: code }).eq('id', userId);
+  const { error } = await admin
+    .from('users')
+    .update({ referral_code: code })
+    .eq('id', userId);
+
+  if (error) {
+    console.error('[referral-server] ensureUserReferralCode update failed:', error);
+    throw new Error(
+      `referral_code update failed: ${error.message} (code: ${error.code ?? 'n/a'})`,
+    );
+  }
+
   return code;
 }
 
