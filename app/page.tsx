@@ -2,7 +2,8 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { AppHeader } from '@/components/AppHeader';
-import { getCategoryStyle, MARKET_CATEGORIES } from '@/lib/categories';
+import { MarketOddsGauge } from '@/components/MarketOddsGauge';
+import { getCategoryStyle, MARKET_CATEGORIES, NO_COLOR, YES_COLOR } from '@/lib/categories';
 import {
   isMarketActiveForFilter,
   isMarketClosedForFilter,
@@ -127,11 +128,16 @@ export default function Home() {
                   key={cat}
                   type="button"
                   onClick={() => setCategoryFilter(cat)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all border ${
                     categoryFilter === cat
-                      ? 'bg-emerald-600 text-white'
-                      : 'bg-[#111827] text-gray-400 border border-white/10 hover:text-white hover:border-white/20'
+                      ? 'text-white border-[#34d399]/40'
+                      : 'bg-[#111827] text-gray-400 border-white/10 hover:text-white hover:border-white/20'
                   }`}
+                  style={
+                    categoryFilter === cat
+                      ? { backgroundColor: 'rgba(52,211,153,0.2)' }
+                      : undefined
+                  }
                 >
                   {cat}
                 </button>
@@ -148,11 +154,16 @@ export default function Home() {
                   key={value}
                   type="button"
                   onClick={() => setStatusFilter(value)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all border ${
                     statusFilter === value
-                      ? 'bg-emerald-600 text-white'
-                      : 'bg-[#111827] text-gray-400 border border-white/10 hover:text-white hover:border-white/20'
+                      ? 'text-white border-[#34d399]/40'
+                      : 'bg-[#111827] text-gray-400 border-white/10 hover:text-white hover:border-white/20'
                   }`}
+                  style={
+                    statusFilter === value
+                      ? { backgroundColor: 'rgba(52,211,153,0.2)' }
+                      : undefined
+                  }
                 >
                   {label}
                 </button>
@@ -165,7 +176,7 @@ export default function Home() {
           ) : null}
 
           {filteredMarkets.map((m) => {
-            const { emoji, bgColor } = getCategoryStyle(m.category);
+            const { emoji, gradient } = getCategoryStyle(m.category);
             const showBreaking = Boolean(m.is_breaking);
             const showNew = isNewMarket(m.created_at);
 
@@ -173,12 +184,12 @@ export default function Home() {
               <Link
                 key={m.id}
                 href={`/market/${m.id}`}
-                className="block bg-[#111827] border border-white/10 rounded-xl p-4 cursor-pointer transition-all hover:border-white/20 hover:bg-[#151d32] focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/60"
+                className="block bg-[#111827] border border-white/10 rounded-xl p-4 cursor-pointer transition-all hover:border-white/20 hover:bg-[#151d32] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#34d399]/40"
               >
-                <div className="flex gap-3">
+                <div className="flex items-center gap-3">
                   <div
                     className="shrink-0 w-16 h-16 rounded-lg flex items-center justify-center"
-                    style={{ backgroundColor: bgColor }}
+                    style={{ background: gradient }}
                     aria-hidden
                   >
                     <span
@@ -192,50 +203,56 @@ export default function Home() {
                   </div>
 
                   <div className="flex-1 min-w-0">
-                    <p
-                      className={`text-white text-sm font-medium leading-snug line-clamp-2 ${
-                        showBreaking || showNew ? '' : 'mb-2'
-                      }`}
-                    >
+                    <p className="text-white text-sm font-medium leading-snug line-clamp-2">
                       {m.question}
                     </p>
                     {(showBreaking || showNew) && (
-                      <div className="flex flex-wrap items-center gap-1.5 mb-2">
+                      <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
                         {showBreaking ? (
-                          <span className="text-xs px-1.5 py-0.5 rounded-full bg-red-600 text-white font-medium">
+                          <span
+                            className="text-xs px-1.5 py-0.5 rounded-full font-medium"
+                            style={{
+                              background: 'rgba(220,38,38,0.25)',
+                              border: '1px solid rgba(220,38,38,0.5)',
+                              color: '#fca5a5',
+                            }}
+                          >
                             🔥 속보
                           </span>
                         ) : null}
                         {showNew ? (
-                          <span className="text-xs px-1.5 py-0.5 rounded-full bg-blue-600 text-white font-medium">
+                          <span
+                            className="text-xs px-1.5 py-0.5 rounded-full font-medium"
+                            style={{
+                              background: 'rgba(79,70,229,0.25)',
+                              border: '1px solid rgba(79,70,229,0.5)',
+                              color: '#a5b4fc',
+                            }}
+                          >
                             🆕 신규
                           </span>
                         ) : null}
                       </div>
                     )}
-                    <div className="flex justify-between text-xs mb-1">
-                      <span className="text-emerald-400">YES {m.yes_percent}%</span>
-                      <span className="text-red-400">NO {m.no_percent}%</span>
-                    </div>
-                    <div className="flex rounded-full overflow-hidden h-2">
-                      <div
-                        className="bg-emerald-500"
-                        style={{ width: `${m.yes_percent}%` }}
-                      />
-                      <div
-                        className="bg-red-500"
-                        style={{ width: `${m.no_percent}%` }}
-                      />
-                    </div>
                     {isMarketEnded(m) && (
                       <div
-                        className={`text-xs font-bold px-2 py-1 rounded-lg text-center mt-2 ${
+                        className="text-xs font-bold px-2 py-1 rounded-lg mt-2 inline-block"
+                        style={
                           isMarketSettled(m)
                             ? m.result === 'YES'
-                              ? 'bg-emerald-500/20 text-emerald-400'
-                              : 'bg-red-500/20 text-red-400'
-                            : 'bg-gray-800/80 text-gray-400'
-                        }`}
+                              ? {
+                                  background: 'rgba(52,211,153,0.15)',
+                                  color: YES_COLOR,
+                                }
+                              : {
+                                  background: 'rgba(248,113,113,0.15)',
+                                  color: NO_COLOR,
+                                }
+                            : {
+                                background: 'rgba(255,255,255,0.06)',
+                                color: '#9ca3af',
+                              }
+                        }
                       >
                         {isMarketSettled(m)
                           ? m.result === 'YES'
@@ -245,6 +262,11 @@ export default function Home() {
                       </div>
                     )}
                   </div>
+
+                  <MarketOddsGauge
+                    yesPercent={m.yes_percent}
+                    noPercent={m.no_percent}
+                  />
                 </div>
               </Link>
             );
