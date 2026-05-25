@@ -126,8 +126,10 @@ export async function POST(request: NextRequest) {
     }
 
     if (pointsEarned > 0) {
+      const telegramId = String(round.user_id);
+
       const { error: txErr } = await admin.from('point_transactions').insert({
-        user_id: round.user_id,
+        user_id: telegramId,
         amount: pointsEarned,
         reason: 'quiz_correct',
       });
@@ -136,6 +138,37 @@ export async function POST(request: NextRequest) {
         console.error('[api/quiz/submit] point_transactions insert:', txErr);
         return Response.json(
           { error: txErr.message, code: txErr.code },
+          { status: 500 },
+        );
+      }
+
+      const { data: userData, error: userFetchErr } = await admin
+        .from('users')
+        .select('points')
+        .eq('telegram_id', telegramId)
+        .single();
+
+      if (userFetchErr || !userData) {
+        console.error('[api/quiz/submit] fetch user points:', userFetchErr);
+        return Response.json(
+          {
+            error:
+              userFetchErr?.message ?? 'user not found for points update',
+            code: userFetchErr?.code,
+          },
+          { status: 500 },
+        );
+      }
+
+      const { error: pointsUpdateErr } = await admin
+        .from('users')
+        .update({ points: (userData.points ?? 0) + pointsEarned })
+        .eq('telegram_id', telegramId);
+
+      if (pointsUpdateErr) {
+        console.error('[api/quiz/submit] update user points:', pointsUpdateErr);
+        return Response.json(
+          { error: pointsUpdateErr.message, code: pointsUpdateErr.code },
           { status: 500 },
         );
       }
