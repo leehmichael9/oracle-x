@@ -5,28 +5,26 @@ import {
   generateReferralCode,
 } from '@/lib/referral';
 import { awardPoints } from '@/lib/points';
+import {
+  type UsersRowKey,
+  persistUserReferralCode,
+  usersHasReferralCodeColumn,
+} from '@/lib/users-db';
 
 export async function ensureUserReferralCode(
   admin: SupabaseClient,
-  userId: string,
-  telegramId: string,
+  userKey: UsersRowKey,
   existingCode: string | null | undefined,
 ): Promise<string> {
   if (existingCode) return existingCode;
-  const code = generateReferralCode(telegramId);
-  const { error } = await admin
-    .from('users')
-    .update({ referral_code: code })
-    .eq('id', userId);
+  const code = generateReferralCode(userKey.telegram_id);
+  const result = await persistUserReferralCode(admin, userKey, code);
 
-  if (error) {
-    console.error('[referral-server] ensureUserReferralCode update failed:', error);
-    throw new Error(
-      `referral_code update failed: ${error.message} (code: ${error.code ?? 'n/a'})`,
-    );
+  if (result.warning) {
+    console.warn('[referral-server] ensureUserReferralCode:', result.warning);
   }
 
-  return code;
+  return result.code;
 }
 
 export async function processReferralSignup(
@@ -34,6 +32,9 @@ export async function processReferralSignup(
   referredUserId: string,
   referralCode: string,
 ): Promise<void> {
+  const hasReferralCode = await usersHasReferralCodeColumn(admin);
+  if (!hasReferralCode) return;
+
   const { data: referrer } = await admin
     .from('users')
     .select('id')
@@ -102,18 +103,29 @@ export async function processReferralFirstBet(
 }
 
 export async function getReferralStats(admin: SupabaseClient, userId: string) {
-  const { data: user } = await admin
-    .from('users')
-    .select('referral_code, telegram_id')
-    .eq('id', userId)
-    .single();
+  const hasReferralCode = await usersHasReferralCodeColumn(admin);
+  const { data: user } = hasReferralCode
+    ? await admin
+        .from('users')
+        .select('referral_code, telegram_id')
+        .eq('id', userId)
+        .single()
+    : await admin
+        .from('users')
+        .select('telegram_id')
+        .eq('id', userId)
+        .single();
+
+  const existingReferralCode =
+    user && 'referral_code' in user
+      ? (user.referral_code as string | null | undefined)
+      : undefined;
 
   const referralCode = user
     ? await ensureUserReferralCode(
         admin,
-        userId,
-        user.telegram_id,
-        user.referral_code,
+        { id: userId, telegram_id: user.telegram_id },
+        existingReferralCode,
       )
     : '';
 

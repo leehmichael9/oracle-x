@@ -3,11 +3,13 @@ import {
   generateReferralCode,
   parseReferralCodeFromStartParam,
 } from '@/lib/referral';
-import {
-  ensureUserReferralCode,
-  processReferralSignup,
-} from '@/lib/referral-server';
+import { processReferralSignup } from '@/lib/referral-server';
 import { createSupabaseAdmin } from '@/lib/supabase-admin';
+import {
+  findUserByTelegramId,
+  persistUserReferralCode,
+  usersHasReferralCodeColumn,
+} from '@/lib/users-db';
 
 export const dynamic = 'force-dynamic';
 
@@ -79,63 +81,41 @@ export async function POST(request: NextRequest) {
       return errorResponse(step, err, { telegram_id: telegramId });
     }
 
+    const hasReferralCodeColumn = await usersHasReferralCodeColumn(admin);
+
     step = 'select_existing_user';
-    const { data: existing, error: selectErr } = await admin
-      .from('users')
-      .select('id, referral_code, telegram_id')
-      .eq('telegram_id', telegramId)
-      .maybeSingle();
+    const { user: existing, error: findErr } = await findUserByTelegramId(
+      admin,
+      telegramId,
+    );
 
-    if (selectErr) {
-      // referral_code 컬럼 미존재 등 — id만 재조회
-      console.error('[api/user/init] select with referral_code failed, retry id only:', selectErr);
-      step = 'select_existing_user_fallback';
-      const { data: existingFallback, error: fallbackErr } = await admin
-        .from('users')
-        .select('id, telegram_id')
-        .eq('telegram_id', telegramId)
-        .maybeSingle();
+    if (findErr) {
+      return errorResponse(step, findErr, {
+        telegram_id: telegramId,
+        hint: 'users 테이블 조회 실패 — telegram_id 컬럼명/RLS 확인',
+      });
+    }
 
-      if (fallbackErr) {
-        return errorResponse(step, fallbackErr, {
-          telegram_id: telegramId,
-          hint: 'users 테이블 조회 실패 — telegram_id 컬럼명/RLS 확인',
-        });
-      }
-
-      if (existingFallback) {
-        step = 'ensure_referral_code_existing';
-        let code = referralCode;
-        try {
-          code = await ensureUserReferralCode(
-            admin,
-            existingFallback.id,
-            telegramId,
-            null,
-          );
-        } catch (err) {
-          return errorResponse(step, err, { user_id: existingFallback.id });
-        }
-
-        return Response.json({
-          ok: true,
-          user_id: existingFallback.id,
-          is_new_user: false,
-          referral_code: code,
-        });
-      }
-    } else if (existing) {
+    if (existing) {
       step = 'ensure_referral_code_existing';
-      let code: string;
-      try {
-        code = await ensureUserReferralCode(
-          admin,
-          existing.id,
-          telegramId,
-          existing.referral_code,
-        );
-      } catch (err) {
-        return errorResponse(step, err, { user_id: existing.id });
+      let code = existing.referral_code ?? referralCode;
+      if (!existing.referral_code) {
+        try {
+          const persisted = await persistUserReferralCode(
+            admin,
+            { id: existing.id, telegram_id: existing.telegram_id },
+            referralCode,
+          );
+          code = persisted.code;
+          if (persisted.warning) {
+            console.warn('[api/user/init] referral_code not persisted:', persisted.warning);
+          }
+        } catch (err) {
+          return errorResponse(step, err, {
+            user_id: existing.id,
+            telegram_id: existing.telegram_id,
+          });
+        }
       }
 
       return Response.json({
@@ -151,24 +131,23 @@ export async function POST(request: NextRequest) {
       telegram_id: telegramId,
       username,
       points: DEFAULT_START_POINTS,
-      referral_code: referralCode,
     };
+    if (hasReferralCodeColumn) {
+      insertPayload.referral_code = referralCode;
+    }
 
-    const { data: newUser, error: insertErr } = await admin
-      .from('users')
-      .insert(insertPayload)
-      .select('id, referral_code')
-      .single();
+    const insertQuery = admin.from('users').insert(insertPayload);
+    const { data: newUser, error: insertErr } = hasReferralCodeColumn
+      ? await insertQuery.select('id, referral_code').single()
+      : await insertQuery.select('id').single();
 
     if (insertErr) {
-      // 동시 요청 등으로 이미 생성된 경우 재조회
       if (insertErr.code === '23505') {
         step = 'insert_duplicate_retry_select';
-        const { data: raced, error: raceErr } = await admin
-          .from('users')
-          .select('id, referral_code')
-          .eq('telegram_id', telegramId)
-          .maybeSingle();
+        const { user: raced, error: raceErr } = await findUserByTelegramId(
+          admin,
+          telegramId,
+        );
 
         if (raceErr || !raced) {
           return errorResponse(step, raceErr ?? insertErr, {
@@ -177,34 +156,46 @@ export async function POST(request: NextRequest) {
           });
         }
 
+        const code =
+          raced.referral_code ??
+          (await persistUserReferralCode(
+            admin,
+            { id: raced.id, telegram_id: raced.telegram_id },
+            referralCode,
+          )).code;
+
         return Response.json({
           ok: true,
           user_id: raced.id,
           is_new_user: false,
-          referral_code: raced.referral_code ?? referralCode,
+          referral_code: code,
         });
       }
 
       return errorResponse(step, insertErr, {
         telegram_id: telegramId,
         payload: insertPayload,
-        hint: 'users INSERT 실패 — 컬럼명(referral_code, telegram_id, username, points) 확인',
+        hint: 'users INSERT 실패 — 컬럼명(telegram_id, username, points) 확인',
       });
     }
 
-    if (!newUser) {
+    if (!newUser?.id) {
       return errorResponse(step, new Error('insert succeeded but no row returned'), {
         telegram_id: telegramId,
       });
     }
 
+    const userId = String(newUser.id);
+    const savedReferralCode = hasReferralCodeColumn
+      ? ((newUser as { referral_code?: string }).referral_code ?? referralCode)
+      : referralCode;
+
     step = 'process_referral_signup';
     const parsedReferral = parseReferralCodeFromStartParam(startParam);
-    if (parsedReferral) {
+    if (parsedReferral && hasReferralCodeColumn) {
       try {
-        await processReferralSignup(admin, newUser.id, parsedReferral);
+        await processReferralSignup(admin, userId, parsedReferral);
       } catch (err) {
-        // 레퍼럴 실패는 가입 자체를 막지 않음
         console.error('[api/user/init] processReferralSignup failed (non-fatal):', err);
       }
     }
@@ -213,7 +204,7 @@ export async function POST(request: NextRequest) {
     const { data: refreshed, error: refreshErr } = await admin
       .from('users')
       .select('points')
-      .eq('id', newUser.id)
+      .eq('id', userId)
       .single();
 
     if (refreshErr) {
@@ -222,9 +213,9 @@ export async function POST(request: NextRequest) {
 
     return Response.json({
       ok: true,
-      user_id: newUser.id,
+      user_id: userId,
       is_new_user: true,
-      referral_code: newUser.referral_code ?? referralCode,
+      referral_code: savedReferralCode,
       points: refreshed?.points ?? DEFAULT_START_POINTS,
     });
   } catch (err) {

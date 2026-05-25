@@ -7,7 +7,7 @@ import { isMarketEnded, isMarketSettled } from '@/lib/market';
 import { supabase } from '@/lib/supabase';
 import { useTelegramUser } from '@/lib/useTelegramUser';
 
-// test_user_001 (telegram_id) — Supabase users.id
+// userId = users.id (uuid), 로컬 fallback telegram_id는 test_user_001
 const MIN_BET = 10;
 const MAX_BET = 500;
 
