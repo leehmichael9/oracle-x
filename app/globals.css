@@ -4,6 +4,13 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --yes-color: #34d399;
+  --no-color: #f87171;
+  --yes-bg: rgba(52, 211, 153, 0.15);
+  --yes-bg-active: rgba(52, 211, 153, 0.35);
+  --no-bg: rgba(248, 113, 113, 0.15);
+  --no-bg-active: rgba(248, 113, 113, 0.35);
+  --bet-submit-bg: rgba(52, 211, 153, 0.8);
 }
 
 @theme inline {

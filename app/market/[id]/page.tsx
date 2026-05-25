@@ -3,6 +3,15 @@
 import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
+import {
+  BET_SUBMIT_BG,
+  getNoChoiceButtonStyle,
+  getSettledResultBadgeStyle,
+  getYesChoiceButtonStyle,
+  getYesNoProgressFillStyles,
+  NO_COLOR,
+  YES_COLOR,
+} from '@/lib/categories';
 import { isMarketEnded, isMarketSettled } from '@/lib/market';
 import { supabase } from '@/lib/supabase';
 import { useTelegramUser } from '@/lib/useTelegramUser';
@@ -172,13 +181,19 @@ export default function MarketBetPage() {
         <p className="text-gray-300">마켓을 찾을 수 없습니다.</p>
         <Link
           href="/"
-          className="text-emerald-400 hover:text-emerald-300 underline underline-offset-4"
+          className="underline underline-offset-4 hover:opacity-80 transition-opacity"
+          style={{ color: YES_COLOR }}
         >
           목록으로
         </Link>
       </div>
     );
   }
+
+  const progressFill = getYesNoProgressFillStyles(
+    market.yes_percent,
+    market.no_percent,
+  );
 
   return (
     <div className="min-h-screen bg-[#0a0f1e] flex flex-col items-center py-12 px-4">
@@ -207,25 +222,38 @@ export default function MarketBetPage() {
 
             <div className="w-full mt-3">
               <div className="flex flex-col items-start gap-0.5 text-xs font-medium mb-1">
-                <span className="text-emerald-400">YES {market.yes_percent}%</span>
-                <span className="text-red-400">NO {market.no_percent}%</span>
+                <span style={{ color: YES_COLOR }}>
+                  YES {market.yes_percent}%
+                </span>
+                <span style={{ color: NO_COLOR }}>NO {market.no_percent}%</span>
               </div>
-              <div className="w-full h-2 rounded-full overflow-hidden bg-red-900/40">
+              <div className="w-full h-2 rounded-full overflow-hidden flex">
                 <div
-                  className="h-full bg-emerald-500 rounded-full transition-all"
-                  style={{ width: `${market.yes_percent}%` }}
+                  className="h-full transition-all"
+                  style={progressFill.yes}
+                />
+                <div
+                  className="h-full transition-all"
+                  style={progressFill.no}
                 />
               </div>
             </div>
         {isMarketEnded(market) && (
           <div
-            className={`flex items-center justify-start gap-2 py-2 px-4 rounded-xl font-bold text-sm ${
+            className={`flex items-center justify-start gap-2 py-2 px-4 rounded-xl font-bold text-sm border ${
               isMarketSettled(market)
-                ? market.result === 'YES'
-                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
-                  : 'bg-red-500/20 text-red-400 border border-red-500/40'
-                : 'bg-gray-800/80 text-gray-400 border border-white/10'
+                ? ''
+                : 'bg-gray-800/80 text-gray-400 border-white/10'
             }`}
+            style={
+              isMarketSettled(market) && market.result
+                ? {
+                    ...getSettledResultBadgeStyle(market.result),
+                    borderColor:
+                      market.result === 'YES' ? YES_COLOR : NO_COLOR,
+                  }
+                : undefined
+            }
           >
             {isMarketSettled(market) ? (
               <>
@@ -252,11 +280,8 @@ export default function MarketBetPage() {
               setChoice('YES');
               setSuccess(false);
             }}
-            className={`flex-1 py-3 rounded-xl font-semibold transition-all border ${
-              choice === 'YES'
-                ? 'bg-emerald-600 border-emerald-400 text-white shadow-lg shadow-emerald-900/40 scale-[1.02]'
-                : 'bg-emerald-950/40 border-emerald-800/50 text-emerald-300/80 hover:border-emerald-600/60'
-            }`}
+            className="hover:opacity-90"
+            style={getYesChoiceButtonStyle(choice === 'YES')}
           >
             YES
           </button>
@@ -266,11 +291,8 @@ export default function MarketBetPage() {
               setChoice('NO');
               setSuccess(false);
             }}
-            className={`flex-1 py-3 rounded-xl font-semibold transition-all border ${
-              choice === 'NO'
-                ? 'bg-red-600 border-red-400 text-white shadow-lg shadow-red-900/40 scale-[1.02]'
-                : 'bg-red-950/40 border-red-800/50 text-red-300/80 hover:border-red-600/60'
-            }`}
+            className="hover:opacity-90"
+            style={getNoChoiceButtonStyle(choice === 'NO')}
           >
             NO
           </button>
@@ -291,7 +313,7 @@ export default function MarketBetPage() {
               setPoints(e.target.value);
               setSuccess(false);
             }}
-            className="w-full rounded-lg bg-[#0a0f1e] border border-white/15 px-4 py-3 text-white placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50"
+            className="w-full rounded-lg bg-[#0a0f1e] border border-white/15 px-4 py-3 text-white placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-[color:var(--yes-color)]/50 focus:border-[color:var(--yes-color)]/50"
           />
         </div>
 
@@ -308,14 +330,20 @@ export default function MarketBetPage() {
 ) : null}
 
         {success ? (
-          <p className="text-left text-emerald-400 font-semibold py-2">베팅 완료!</p>
+          <p
+            className="text-left font-semibold py-2"
+            style={{ color: YES_COLOR }}
+          >
+            베팅 완료!
+          </p>
         ) : null}
 
-<button
-  type="button"
-  disabled={submitting || success}
-  onClick={handleBet}
-          className="w-full py-3 rounded-xl font-semibold bg-gradient-to-r from-emerald-600 to-teal-600 text-white hover:from-emerald-500 hover:to-teal-500 disabled:opacity-50 disabled:pointer-events-none transition-all shadow-lg shadow-emerald-900/30"
+        <button
+          type="button"
+          disabled={submitting || success}
+          onClick={handleBet}
+          className="w-full py-3 rounded-xl font-semibold text-white hover:opacity-90 disabled:opacity-50 disabled:pointer-events-none transition-opacity"
+          style={{ background: BET_SUBMIT_BG }}
         >
           {submitting ? '처리 중...' : '베팅하기'}
         </button>

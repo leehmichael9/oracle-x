@@ -61,8 +61,92 @@ export function normalizeCategory(raw: string): string {
   return trimmed;
 }
 
+import type { CSSProperties } from 'react';
+
+/** YES/NO 공통 컬러 (메인·상세·게이지 공유) */
 export const YES_COLOR = '#34d399';
 export const NO_COLOR = '#f87171';
+
+export const YES_BG = 'rgba(52, 211, 153, 0.15)';
+export const YES_BG_ACTIVE = 'rgba(52, 211, 153, 0.35)';
+export const NO_BG = 'rgba(248, 113, 113, 0.15)';
+export const NO_BG_ACTIVE = 'rgba(248, 113, 113, 0.35)';
+export const YES_BORDER_SOFT = 'rgba(52, 211, 153, 0.5)';
+export const NO_BORDER_SOFT = 'rgba(248, 113, 113, 0.5)';
+export const BET_SUBMIT_BG = 'rgba(52, 211, 153, 0.8)';
+
+const pillBase: CSSProperties = {
+  borderRadius: 8,
+  padding: 8,
+  fontSize: 13,
+  fontWeight: 600,
+};
+
+/** 메인 카드 YES/NO 링크 */
+export function getYesPillLinkStyle(): CSSProperties {
+  return {
+    ...pillBase,
+    background: YES_BG,
+    border: `1px solid ${YES_BORDER_SOFT}`,
+    color: YES_COLOR,
+  };
+}
+
+export function getNoPillLinkStyle(): CSSProperties {
+  return {
+    ...pillBase,
+    background: NO_BG,
+    border: `1px solid ${NO_BORDER_SOFT}`,
+    color: NO_COLOR,
+  };
+}
+
+const choiceButtonBase: CSSProperties = {
+  flex: 1,
+  padding: '12px 0',
+  borderRadius: 12,
+  fontWeight: 600,
+  border: '1px solid',
+  transition: 'background 0.15s ease, transform 0.15s ease',
+};
+
+/** 상세 페이지 YES/NO 선택 버튼 */
+export function getYesChoiceButtonStyle(active: boolean): CSSProperties {
+  return {
+    ...choiceButtonBase,
+    background: active ? YES_BG_ACTIVE : YES_BG,
+    borderColor: YES_COLOR,
+    color: YES_COLOR,
+    transform: active ? 'scale(1.02)' : undefined,
+  };
+}
+
+export function getNoChoiceButtonStyle(active: boolean): CSSProperties {
+  return {
+    ...choiceButtonBase,
+    background: active ? NO_BG_ACTIVE : NO_BG,
+    borderColor: NO_COLOR,
+    color: NO_COLOR,
+    transform: active ? 'scale(1.02)' : undefined,
+  };
+}
+
+/** 상세·카드용 YES/NO 비율 프로그레스 바 */
+export function getYesNoProgressFillStyles(
+  yesPercent: number,
+  noPercent: number,
+): { yes: CSSProperties; no: CSSProperties } {
+  return {
+    yes: { width: `${yesPercent}%`, backgroundColor: YES_COLOR },
+    no: { width: `${noPercent}%`, backgroundColor: NO_COLOR },
+  };
+}
+
+export function getSettledResultBadgeStyle(result: 'YES' | 'NO'): CSSProperties {
+  return result === 'YES'
+    ? { background: YES_BG, color: YES_COLOR }
+    : { background: NO_BG, color: NO_COLOR };
+}
 
 export type CategoryStyle = {
   emoji: string;

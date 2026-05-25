@@ -4,7 +4,13 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AppHeader } from '@/components/AppHeader';
 import { BottomNav, type BottomNavTab } from '@/components/BottomNav';
-import { getCategoryStyle, MARKET_CATEGORIES, NO_COLOR, YES_COLOR } from '@/lib/categories';
+import {
+  getCategoryStyle,
+  getNoPillLinkStyle,
+  getSettledResultBadgeStyle,
+  getYesPillLinkStyle,
+  MARKET_CATEGORIES,
+} from '@/lib/categories';
 import {
   isMarketActiveForFilter,
   isMarketClosedForFilter,
@@ -259,16 +265,8 @@ export default function Home() {
                       <div
                         className="text-xs font-bold px-2 py-1 rounded-lg mt-2 inline-block"
                         style={
-                          isMarketSettled(m)
-                            ? m.result === 'YES'
-                              ? {
-                                  background: 'rgba(52,211,153,0.15)',
-                                  color: YES_COLOR,
-                                }
-                              : {
-                                  background: 'rgba(248,113,113,0.15)',
-                                  color: NO_COLOR,
-                                }
+                          isMarketSettled(m) && m.result
+                            ? getSettledResultBadgeStyle(m.result)
                             : {
                                 background: 'rgba(255,255,255,0.06)',
                                 color: '#9ca3af',
@@ -289,30 +287,14 @@ export default function Home() {
                   <Link
                     href={`/market/${m.id}?side=yes`}
                     className="flex-1 text-center transition-opacity hover:opacity-90"
-                    style={{
-                      background: 'rgba(52,211,153,0.15)',
-                      border: '1px solid rgba(52,211,153,0.5)',
-                      color: YES_COLOR,
-                      borderRadius: 8,
-                      padding: 8,
-                      fontSize: 13,
-                      fontWeight: 600,
-                    }}
+                    style={getYesPillLinkStyle()}
                   >
                     YES {m.yes_percent}%
                   </Link>
                   <Link
                     href={`/market/${m.id}?side=no`}
                     className="flex-1 text-center transition-opacity hover:opacity-90"
-                    style={{
-                      background: 'rgba(248,113,113,0.15)',
-                      border: '1px solid rgba(248,113,113,0.5)',
-                      color: NO_COLOR,
-                      borderRadius: 8,
-                      padding: 8,
-                      fontSize: 13,
-                      fontWeight: 600,
-                    }}
+                    style={getNoPillLinkStyle()}
                   >
                     NO {m.no_percent}%
                   </Link>
