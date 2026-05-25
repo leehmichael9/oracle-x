@@ -47,9 +47,9 @@ export function MarketOddsGauge({ yesPercent, noPercent }: MarketOddsGaugeProps)
           />
         </g>
         <text
-          x="28"
+          x="6"
           y="26"
-          textAnchor="middle"
+          textAnchor="start"
           dominantBaseline="middle"
           fill="white"
           fontSize="11"
@@ -57,7 +57,7 @@ export function MarketOddsGauge({ yesPercent, noPercent }: MarketOddsGaugeProps)
         >
           {yesPercent}%
         </text>
-        <text x="28" y="40" textAnchor="middle" fill="#9ca3af" fontSize="10">
+        <text x="6" y="40" textAnchor="start" fill="#9ca3af" fontSize="10">
           NO {noPercent}%
         </text>
       </svg>

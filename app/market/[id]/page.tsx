@@ -183,13 +183,12 @@ export default function MarketBetPage() {
       </p>
 
       <div className="w-full max-w-xl bg-[#111827] border border-white/10 rounded-xl p-6 space-y-6">
-        <h1 className="text-xl font-semibold text-white text-center leading-snug">
+        <h1 className="text-xl font-semibold text-white text-left leading-snug">
           {market.question}
         </h1>
-        
-            {/* 현재 배당률 */}
+
             <div className="w-full mt-3">
-              <div className="flex justify-between text-xs font-medium mb-1">
+              <div className="flex flex-col items-start gap-0.5 text-xs font-medium mb-1">
                 <span className="text-emerald-400">YES {market.yes_percent}%</span>
                 <span className="text-red-400">NO {market.no_percent}%</span>
               </div>
@@ -202,7 +201,7 @@ export default function MarketBetPage() {
             </div>
         {isMarketEnded(market) && (
           <div
-            className={`flex items-center justify-center gap-2 py-2 px-4 rounded-xl font-bold text-sm ${
+            className={`flex items-center justify-start gap-2 py-2 px-4 rounded-xl font-bold text-sm ${
               isMarketSettled(market)
                 ? market.result === 'YES'
                   ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
@@ -221,7 +220,7 @@ export default function MarketBetPage() {
           </div>
         )}
         {isMarketEnded(market) ? (
-          <p className="text-center text-gray-500 text-sm py-4 border border-white/10 rounded-xl">
+          <p className="text-left text-gray-500 text-sm py-4 px-4 border border-white/10 rounded-xl">
             {isMarketSettled(market)
               ? '이 마켓은 종료되었습니다. 베팅이 불가합니다.'
               : '마감 기한이 지나 베팅이 불가합니다.'}
@@ -291,7 +290,7 @@ export default function MarketBetPage() {
 ) : null}
 
         {success ? (
-          <p className="text-center text-emerald-400 font-semibold py-2">베팅 완료!</p>
+          <p className="text-left text-emerald-400 font-semibold py-2">베팅 완료!</p>
         ) : null}
 
 <button

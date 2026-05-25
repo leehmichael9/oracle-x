@@ -1,7 +1,8 @@
 'use client';
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { AppHeader } from '@/components/AppHeader';
+import { BottomNav, type BottomNavTab } from '@/components/BottomNav';
 import { MarketOddsGauge } from '@/components/MarketOddsGauge';
 import { getCategoryStyle, MARKET_CATEGORIES, NO_COLOR, YES_COLOR } from '@/lib/categories';
 import {
@@ -46,18 +47,50 @@ export default function Home() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('active');
   const [searchQuery, setSearchQuery] = useState('');
   const [showMyInfo, setShowMyInfo] = useState(false);
+  const [breakingOnly, setBreakingOnly] = useState(false);
+  const [navTab, setNavTab] = useState<BottomNavTab>('home');
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const { userId, loading: userLoading } = useTelegramUser();
 
   const filteredMarkets = useMemo(() => {
     const keyword = searchQuery.trim().toLowerCase();
     return markets.filter((m) => {
+      if (breakingOnly && !m.is_breaking) return false;
       if (keyword && !m.question.toLowerCase().includes(keyword)) return false;
       if (categoryFilter !== '전체' && m.category !== categoryFilter) return false;
       if (statusFilter === 'active' && !isMarketActiveForFilter(m)) return false;
       if (statusFilter === 'resolved' && !isMarketClosedForFilter(m)) return false;
       return true;
     });
-  }, [markets, searchQuery, categoryFilter, statusFilter]);
+  }, [markets, breakingOnly, searchQuery, categoryFilter, statusFilter]);
+
+  function handleNavHome() {
+    setNavTab('home');
+    setBreakingOnly(false);
+    setShowMyInfo(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function handleNavSearch() {
+    setNavTab('search');
+    setBreakingOnly(false);
+    searchInputRef.current?.focus();
+    searchInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  function handleNavBreaking() {
+    setNavTab('breaking');
+    setBreakingOnly(true);
+    setShowMyInfo(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function handleNavProfile() {
+    setNavTab('profile');
+    setBreakingOnly(false);
+    setShowMyInfo(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
 
   useEffect(() => {
     async function load() {
@@ -81,10 +114,17 @@ export default function Home() {
   }, [userId]);
 
   return (
-    <div className="min-h-screen bg-[#0a0f1e] flex flex-col items-center py-4 px-4">
+    <div className="min-h-screen bg-[#0a0f1e] flex flex-col items-center py-4 px-4 pb-20">
       <AppHeader
         showMyInfo={showMyInfo}
-        onToggleMyInfo={() => setShowMyInfo((v) => !v)}
+        onToggleMyInfo={() => {
+          setShowMyInfo((prev) => {
+            const next = !prev;
+            setNavTab(next ? 'profile' : 'home');
+            setBreakingOnly(false);
+            return next;
+          });
+        }}
         points={points}
         pointsLoading={userLoading || (Boolean(userId) && points === null)}
       />
@@ -103,9 +143,11 @@ export default function Home() {
               🔍
             </span>
             <input
+              ref={searchInputRef}
               type="search"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={() => setNavTab('search')}
               placeholder="마켓 검색"
               className="w-full rounded-xl bg-[#111827] border border-white/10 py-2.5 pl-10 pr-10 text-sm text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50"
             />
@@ -127,7 +169,11 @@ export default function Home() {
                 <button
                   key={cat}
                   type="button"
-                  onClick={() => setCategoryFilter(cat)}
+                  onClick={() => {
+                    setCategoryFilter(cat);
+                    setBreakingOnly(false);
+                    setNavTab('home');
+                  }}
                   className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all border ${
                     categoryFilter === cat
                       ? 'text-white border-[#34d399]/40'
@@ -153,7 +199,11 @@ export default function Home() {
                 <button
                   key={value}
                   type="button"
-                  onClick={() => setStatusFilter(value)}
+                  onClick={() => {
+                    setStatusFilter(value);
+                    setBreakingOnly(false);
+                    setNavTab('home');
+                  }}
                   className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all border ${
                     statusFilter === value
                       ? 'text-white border-[#34d399]/40'
@@ -203,11 +253,11 @@ export default function Home() {
                   </div>
 
                   <div className="flex-1 min-w-0">
-                    <p className="text-white text-sm font-medium leading-snug line-clamp-2">
+                    <p className="text-white text-sm font-medium leading-snug line-clamp-2 text-left">
                       {m.question}
                     </p>
                     {(showBreaking || showNew) && (
-                      <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+                      <div className="flex flex-wrap items-center justify-start gap-1.5 mt-1.5">
                         {showBreaking ? (
                           <span
                             className="text-xs px-1.5 py-0.5 rounded-full font-medium"
@@ -273,6 +323,14 @@ export default function Home() {
           })}
         </div>
       )}
+
+      <BottomNav
+        activeTab={navTab}
+        onHome={handleNavHome}
+        onSearch={handleNavSearch}
+        onBreaking={handleNavBreaking}
+        onProfile={handleNavProfile}
+      />
     </div>
   );
 }
