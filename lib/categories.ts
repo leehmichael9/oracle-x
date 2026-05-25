@@ -13,6 +13,54 @@ export const MARKET_CATEGORIES = [
 
 export type MarketCategory = (typeof MARKET_CATEGORIES)[number];
 
+/** DB 저장값 → 관리자/표시용 한글 카테고리 */
+const CATEGORY_ALIAS_MAP: Record<string, string> = {
+  xrp: 'XRP특화',
+  xrp특화: 'XRP특화',
+  XRP특화: 'XRP특화',
+  crypto: '크립토가격',
+  cryptocurrency: '크립토가격',
+  크립토가격: '크립토가격',
+  politics: '정치/시사',
+  '정치/시사': '정치/시사',
+  geopolitics: '지정학',
+  지정학: '지정학',
+  economy: '경제/금융',
+  거시경제: '경제/금융',
+  '경제/금융': '경제/금융',
+  tech: '테크/AI',
+  '테크/AI': '테크/AI',
+  sports: '스포츠',
+  스포츠: '스포츠',
+  culture: '대중문화',
+  대중문화: '대중문화',
+  'k-ent': 'K-엔터',
+  k엔터: 'K-엔터',
+  'K-엔터': 'K-엔터',
+  'korean-economy': '한국 증시/경제',
+  '한국 증시/경제': '한국 증시/경제',
+  social: '사회/이슈',
+  '사회/이슈': '사회/이슈',
+  크립토산업: '크립토산업',
+};
+
+/** admin 필터 드롭다운 (현행 + 레거시 정규화명) */
+export const ADMIN_CATEGORY_FILTER_OPTIONS: string[] = [
+  ...MARKET_CATEGORIES,
+  'XRP특화',
+  '크립토가격',
+  '크립토산업',
+].filter((v, i, arr) => arr.indexOf(v) === i);
+
+export function normalizeCategory(raw: string): string {
+  const trimmed = raw.trim();
+  if (!trimmed) return raw;
+  if (trimmed in CATEGORY_ALIAS_MAP) return CATEGORY_ALIAS_MAP[trimmed];
+  const lower = trimmed.toLowerCase();
+  if (lower in CATEGORY_ALIAS_MAP) return CATEGORY_ALIAS_MAP[lower];
+  return trimmed;
+}
+
 export const YES_COLOR = '#34d399';
 export const NO_COLOR = '#f87171';
 

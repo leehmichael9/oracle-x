@@ -2,7 +2,11 @@
 
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { MARKET_CATEGORIES } from '@/lib/categories';
+import {
+  ADMIN_CATEGORY_FILTER_OPTIONS,
+  MARKET_CATEGORIES,
+  normalizeCategory,
+} from '@/lib/categories';
 import { isMarketExpiredByEndDate, toDatetimeLocalValue } from '@/lib/market';
 import { supabase } from '@/lib/supabase';
 
@@ -92,7 +96,7 @@ export default function AdminPage() {
 
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('전체');
-  const [endDateSort, setEndDateSort] = useState<EndDateSort>('desc');
+  const [endDateSort, setEndDateSort] = useState<EndDateSort>('asc');
 
   const loadMarkets = useCallback(async () => {
     setListLoading(true);
@@ -117,7 +121,9 @@ export default function AdminPage() {
       list = list.filter((m) => getAdminMarketStatus(m) === statusFilter);
     }
     if (categoryFilter !== '전체') {
-      list = list.filter((m) => m.category === categoryFilter);
+      list = list.filter(
+        (m) => normalizeCategory(m.category) === categoryFilter,
+      );
     }
 
     list.sort((a, b) => {
@@ -493,9 +499,9 @@ export default function AdminPage() {
             className="rounded-lg bg-[#111827] border border-white/10 px-3 py-1.5 text-sm text-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
           >
             <option value="전체">카테고리: 전체</option>
-            {MARKET_CATEGORIES.map((c) => (
+            {ADMIN_CATEGORY_FILTER_OPTIONS.map((c) => (
               <option key={c} value={c}>
-                {c}
+                {normalizeCategory(c)}
               </option>
             ))}
           </select>
@@ -563,7 +569,7 @@ export default function AdminPage() {
                         </p>
                       </td>
                       <td className={`${tdClass} whitespace-nowrap text-xs`}>
-                        {m.category}
+                        {normalizeCategory(m.category)}
                       </td>
                       <td className={tdClass}>
                         <StatusBadge status={displayStatus} />
