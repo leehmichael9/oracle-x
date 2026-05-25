@@ -173,19 +173,8 @@ export default function Home() {
               <Link
                 key={m.id}
                 href={`/market/${m.id}`}
-                className="relative block bg-[#111827] border border-white/10 rounded-xl p-4 cursor-pointer transition-all hover:border-white/20 hover:bg-[#151d32] focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/60"
+                className="block bg-[#111827] border border-white/10 rounded-xl p-4 cursor-pointer transition-all hover:border-white/20 hover:bg-[#151d32] focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/60"
               >
-                {(showBreaking || showNew) && (
-                  <div className="absolute top-3 right-3 flex items-center gap-1.5">
-                    {showBreaking ? (
-                      <span className="text-xs font-medium text-orange-400">🔥 속보</span>
-                    ) : null}
-                    {showNew ? (
-                      <span className="text-xs font-medium text-amber-400">🆕 신규</span>
-                    ) : null}
-                  </div>
-                )}
-
                 <div className="flex gap-3">
                   <div
                     className="shrink-0 w-16 h-16 rounded-lg flex items-center justify-center"
@@ -202,10 +191,28 @@ export default function Home() {
                     </span>
                   </div>
 
-                  <div className="flex-1 min-w-0 pr-14">
-                    <p className="text-white text-sm font-medium leading-snug mb-2 line-clamp-2">
+                  <div className="flex-1 min-w-0">
+                    <p
+                      className={`text-white text-sm font-medium leading-snug line-clamp-2 ${
+                        showBreaking || showNew ? '' : 'mb-2'
+                      }`}
+                    >
                       {m.question}
                     </p>
+                    {(showBreaking || showNew) && (
+                      <div className="flex flex-wrap items-center gap-1.5 mb-2">
+                        {showBreaking ? (
+                          <span className="text-xs px-1.5 py-0.5 rounded-full bg-red-600 text-white font-medium">
+                            🔥 속보
+                          </span>
+                        ) : null}
+                        {showNew ? (
+                          <span className="text-xs px-1.5 py-0.5 rounded-full bg-blue-600 text-white font-medium">
+                            🆕 신규
+                          </span>
+                        ) : null}
+                      </div>
+                    )}
                     <div className="flex justify-between text-xs mb-1">
                       <span className="text-emerald-400">YES {m.yes_percent}%</span>
                       <span className="text-red-400">NO {m.no_percent}%</span>
