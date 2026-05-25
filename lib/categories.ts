@@ -6,7 +6,6 @@ export const MARKET_CATEGORIES = [
   '테크/AI',
   '스포츠',
   '대중문화',
-  'e스포츠',
   'K-엔터',
   '한국 증시/경제',
   '사회/이슈',
