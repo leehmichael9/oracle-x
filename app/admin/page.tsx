@@ -74,6 +74,9 @@ export default function AdminPage() {
   const [listLoading, setListLoading] = useState(true);
   const [resolvingId, setResolvingId] = useState<number | null>(null);
   const [expandSettleId, setExpandSettleId] = useState<number | null>(null);
+  const [expandedQuestionIds, setExpandedQuestionIds] = useState<Set<number>>(
+    () => new Set(),
+  );
 
   const [question, setQuestion] = useState('');
   const [category, setCategory] = useState<string>(MARKET_CATEGORIES[0]);
@@ -367,6 +370,18 @@ export default function AdminPage() {
     setEndDateSort((s) => (s === 'asc' ? 'desc' : 'asc'));
   }
 
+  function toggleQuestionExpand(marketId: number) {
+    setExpandedQuestionIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(marketId)) {
+        next.delete(marketId);
+      } else {
+        next.add(marketId);
+      }
+      return next;
+    });
+  }
+
   const thClass =
     'px-3 py-2.5 text-left text-xs font-semibold text-gray-400 whitespace-nowrap';
   const tdClass = 'px-3 py-2.5 text-sm text-gray-300 align-middle';
@@ -648,6 +663,7 @@ export default function AdminPage() {
                   const isEditingEndDate = editingEndDateId === m.id;
                   const isEditingSubCategory = editingSubCategoryId === m.id;
                   const isSettleExpanded = expandSettleId === m.id;
+                  const isQuestionExpanded = expandedQuestionIds.has(m.id);
 
                   return (
                     <tr
@@ -660,12 +676,27 @@ export default function AdminPage() {
                         {m.id}
                       </td>
                       <td className={tdClass}>
-                        <p
-                          className="max-w-[280px] truncate text-white font-medium"
-                          title={m.question}
+                        <button
+                          type="button"
+                          onClick={() => toggleQuestionExpand(m.id)}
+                          className="flex max-w-[280px] items-start gap-1 text-left cursor-pointer rounded p-0.5 -m-0.5 hover:bg-white/5 transition-colors"
                         >
-                          {m.question}
-                        </p>
+                          <span
+                            className={`flex-1 text-white font-medium ${
+                              isQuestionExpanded
+                                ? 'whitespace-normal break-words'
+                                : 'truncate'
+                            }`}
+                          >
+                            {m.question}
+                          </span>
+                          <span
+                            className="shrink-0 text-[10px] text-gray-500 leading-5"
+                            aria-hidden
+                          >
+                            {isQuestionExpanded ? '▲' : '▼'}
+                          </span>
+                        </button>
                       </td>
                       <td className={`${tdClass} text-xs whitespace-nowrap`}>
                         {normalizeCategory(m.category)}
