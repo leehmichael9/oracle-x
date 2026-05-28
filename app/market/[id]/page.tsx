@@ -216,7 +216,7 @@ export default function MarketBetPage() {
       <div
         ref={subHeaderRef}
         className="fixed left-0 right-0 z-40 w-full flex justify-center bg-[#0a0f1e] py-2 px-4"
-        style={{ top: headerHeight }}
+        style={{ top: Math.max(headerHeight, 88) }}
       >
         <div className="w-full max-w-xl flex items-center justify-between gap-3">
           <Link
