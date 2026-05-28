@@ -21,6 +21,7 @@ import { useTelegramUser } from '@/lib/useTelegramUser';
 
 // ─── 상수 (컴포넌트 외부 — 렌더링마다 재생성 방지) ───────────────
 const GLOBAL_HEADER_HEIGHT = 80;
+const LOCAL_HEADER_OVERLAP = 2;
 const FIXED_TOP_GAP = 16;
 const MIN_CONTENT_TOP_PADDING = 188;
 const NEW_MARKET_MS = 72 * 60 * 60 * 1000;
@@ -65,6 +66,7 @@ function isNewMarket(createdAt: string | undefined): boolean {
 
 // ─── 메인 컴포넌트 ───────────────────────────────────────────────
 export default function Home() {
+  const localHeaderTop = GLOBAL_HEADER_HEIGHT - LOCAL_HEADER_OVERLAP;
   const router = useRouter();
   const [markets, setMarkets] = useState<Market[]>([]);
   const [loading, setLoading] = useState(true);
@@ -172,7 +174,7 @@ export default function Home() {
   }, [loading, userLoading]);
 
   const contentTopPadding = Math.max(
-    localHeaderHeight + stickyTabsHeight + FIXED_TOP_GAP,
+    localHeaderHeight + stickyTabsHeight + FIXED_TOP_GAP - LOCAL_HEADER_OVERLAP,
     MIN_CONTENT_TOP_PADDING,
   );
 
@@ -186,7 +188,7 @@ export default function Home() {
       <div
         ref={localHeaderRef}
         className="fixed left-0 right-0 z-40 w-full flex flex-col items-center bg-[#0a0f1e] px-4 pb-3"
-        style={{ top: GLOBAL_HEADER_HEIGHT }}
+        style={{ top: localHeaderTop }}
       >
         <div
           ref={categoryTabsRef}
@@ -269,7 +271,7 @@ export default function Home() {
           <div
             ref={stickyTabsRef}
             className="space-y-2 fixed left-0 right-0 z-30 bg-[#0a0f1e] px-4 py-2 flex justify-center"
-            style={{ top: GLOBAL_HEADER_HEIGHT + localHeaderHeight }}
+            style={{ top: localHeaderTop + localHeaderHeight }}
           >
             <div className="w-full max-w-xl space-y-2">
               {/* 진행중 / 종료 탭 */}
