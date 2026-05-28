@@ -48,6 +48,7 @@ function isNewMarket(createdAt: string | undefined): boolean {
 export default function Home() {
   const GLOBAL_HEADER_HEIGHT = 56;
   const FIXED_TOP_GAP = 16;
+  const MIN_CONTENT_TOP_PADDING = 132;
   const router = useRouter();
   const [markets, setMarkets] = useState<Market[]>([]);
   const [loading, setLoading] = useState(true);
@@ -140,15 +141,23 @@ export default function Home() {
       setLocalHeaderHeight(localHeaderRef.current?.offsetHeight ?? 0);
       setStickyTabsHeight(stickyTabsRef.current?.offsetHeight ?? 0);
     };
-    updateStickyHeaderHeight();
+    const raf = window.requestAnimationFrame(updateStickyHeaderHeight);
     window.addEventListener('resize', updateStickyHeaderHeight);
-    return () => window.removeEventListener('resize', updateStickyHeaderHeight);
-  }, []);
+    return () => {
+      window.cancelAnimationFrame(raf);
+      window.removeEventListener('resize', updateStickyHeaderHeight);
+    };
+  }, [loading, userLoading]);
+
+  const contentTopPadding = Math.max(
+    localHeaderHeight + stickyTabsHeight + FIXED_TOP_GAP,
+    MIN_CONTENT_TOP_PADDING,
+  );
 
   return (
     <div
       className="min-h-screen bg-[#0a0f1e] flex flex-col items-center px-4 pb-20"
-      style={{ paddingTop: localHeaderHeight + stickyTabsHeight + FIXED_TOP_GAP }}
+      style={{ paddingTop: contentTopPadding }}
     >
       <div
         ref={localHeaderRef}
