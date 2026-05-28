@@ -60,15 +60,6 @@ export default function Home() {
   const statusTabsRef = useRef<HTMLDivElement>(null);
   const { userId, loading: userLoading } = useTelegramUser();
 
-  function handleHorizontalWheel(
-    e: React.WheelEvent<HTMLDivElement>,
-    targetRef: React.RefObject<HTMLDivElement | null>,
-  ) {
-    if (!targetRef.current) return;
-    e.preventDefault();
-    targetRef.current.scrollLeft += e.deltaY;
-  }
-
   const filteredMarkets = useMemo(() => {
     const keyword = searchQuery.trim().toLowerCase();
     return markets.filter((m) => {
@@ -111,6 +102,32 @@ export default function Home() {
       setLoading(false);
     }
     load();
+  }, []);
+
+  useEffect(() => {
+    const el = categoryTabsRef.current;
+    if (!el) return;
+
+    const handler = (e: WheelEvent) => {
+      e.preventDefault();
+      el.scrollLeft += e.deltaY;
+    };
+
+    el.addEventListener('wheel', handler, { passive: false });
+    return () => el.removeEventListener('wheel', handler);
+  }, []);
+
+  useEffect(() => {
+    const el = statusTabsRef.current;
+    if (!el) return;
+
+    const handler = (e: WheelEvent) => {
+      e.preventDefault();
+      el.scrollLeft += e.deltaY;
+    };
+
+    el.addEventListener('wheel', handler, { passive: false });
+    return () => el.removeEventListener('wheel', handler);
   }, []);
   return (
     <div className="min-h-screen bg-[#0a0f1e] flex flex-col items-center py-4 px-4 pb-20">
@@ -155,7 +172,6 @@ export default function Home() {
               ref={categoryTabsRef}
               className="flex gap-2 overflow-x-auto no-scrollbar"
               style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-              onWheel={(e) => handleHorizontalWheel(e, categoryTabsRef)}
             >
               {(['전체', ...MARKET_CATEGORIES] as CategoryFilter[]).map((cat) => (
                 <button
@@ -185,7 +201,6 @@ export default function Home() {
               ref={statusTabsRef}
               className="flex gap-2 overflow-x-auto no-scrollbar"
               style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-              onWheel={(e) => handleHorizontalWheel(e, statusTabsRef)}
             >
               {(
                 [
