@@ -140,7 +140,10 @@ export default function Home() {
           </div>
 
           <div className="space-y-2">
-            <div className="flex flex-wrap gap-2">
+            <div
+              className="flex gap-2 overflow-x-auto no-scrollbar"
+              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            >
               {(['전체', ...MARKET_CATEGORIES] as CategoryFilter[]).map((cat) => (
                 <button
                   key={cat}
@@ -150,7 +153,7 @@ export default function Home() {
                     setBreakingOnly(false);
                     setNavTab('home');
                   }}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all border ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all border whitespace-nowrap shrink-0 ${
                     categoryFilter === cat
                       ? 'text-white border-[#34d399]/40'
                       : 'bg-[#111827] text-gray-400 border-white/10 hover:text-white hover:border-white/20'
@@ -165,7 +168,10 @@ export default function Home() {
                 </button>
               ))}
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div
+              className="flex gap-2 overflow-x-auto no-scrollbar"
+              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            >
               {(
                 [
                   { value: 'active' as const, label: '진행중' },
@@ -180,7 +186,7 @@ export default function Home() {
                     setBreakingOnly(false);
                     setNavTab('home');
                   }}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all border ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all border whitespace-nowrap shrink-0 ${
                     statusFilter === value
                       ? 'text-white border-[#34d399]/40'
                       : 'bg-[#111827] text-gray-400 border-white/10 hover:text-white hover:border-white/20'
@@ -307,6 +313,11 @@ export default function Home() {
         onBreaking={handleNavBreaking}
         onProfile={handleNavProfile}
       />
+      <style jsx>{`
+        .no-scrollbar::-webkit-scrollbar {
+          display: none;
+        }
+      `}</style>
     </div>
   );
 }
