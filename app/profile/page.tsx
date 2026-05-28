@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { AppHeader } from '@/components/AppHeader';
 import { BottomNav, type BottomNavTab } from '@/components/BottomNav';
 import { NO_COLOR, YES_COLOR } from '@/lib/categories';
 import { buildInviteLink } from '@/lib/referral';
@@ -79,6 +80,8 @@ export default function ProfilePage() {
   const [copyToast, setCopyToast] = useState(false);
   const [pointHistory, setPointHistory] = useState<PointHistoryItem[]>([]);
   const [historyLoading, setHistoryLoading] = useState(true);
+  const [headerHeight, setHeaderHeight] = useState(0);
+  const headerRef = useRef<HTMLDivElement>(null);
 
   // navTab은 이 페이지에서 절대 변하지 않으므로 상태 불필요
   const navTab: BottomNavTab = 'profile';
@@ -135,6 +138,15 @@ export default function ProfilePage() {
     loadPointHistory();
   }, [loadPoints, loadStats, loadPointHistory]);
 
+  useEffect(() => {
+    const update = () => {
+      if (headerRef.current) setHeaderHeight(headerRef.current.offsetHeight);
+    };
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, []);
+
   // ─── 핸들러 ──────────────────────────────────────────────────
   const inviteLink = stats?.referral_code
     ? buildInviteLink(stats.referral_code)
@@ -160,8 +172,14 @@ export default function ProfilePage() {
 
   // ─── 렌더 ────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-[#0a0f1e] flex flex-col items-center pt-4 px-4 pb-20">
-      <div className="w-full max-w-xl space-y-4">
+    <div className="min-h-screen bg-[#0a0f1e] flex flex-col items-center px-4 pb-20">
+      <div
+        ref={headerRef}
+        className="fixed top-0 left-0 right-0 z-50 w-full flex justify-center bg-[#0a0f1e] px-4 py-2"
+      >
+        <AppHeader />
+      </div>
+      <div className="w-full max-w-xl space-y-4" style={{ paddingTop: headerHeight }}>
         <h1 className="text-xl font-bold text-white">내 정보</h1>
 
         {/* 보유 포인트 */}

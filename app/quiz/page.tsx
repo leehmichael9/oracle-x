@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { AppHeader } from '@/components/AppHeader';
 import { BET_SUBMIT_BG, YES_COLOR } from '@/lib/categories';
 import { useTelegramUser } from '@/lib/useTelegramUser';
 
@@ -72,11 +73,15 @@ export default function QuizPage() {
 
   const [result, setResult] = useState<QuizResult | null>(null);
   const [reviewAnswers, setReviewAnswers] = useState<number[]>([]);
+  const [headerHeight, setHeaderHeight] = useState(0);
+  const [subHeaderHeight, setSubHeaderHeight] = useState(0);
 
   const submitLockRef = useRef(false);
   const answersRef = useRef<number[]>([]);
   const roundIdRef = useRef<string | number | null>(null);
   const finishQuizRef = useRef<(answers: number[]) => void>(() => {});
+  const headerRef = useRef<HTMLDivElement>(null);
+  const subHeaderRef = useRef<HTMLDivElement>(null);
 
   const loadStatus = useCallback(async () => {
     const telegramId = getTelegramId();
@@ -191,6 +196,16 @@ export default function QuizPage() {
     return () => window.clearInterval(timer);
   }, [status]);
 
+  useEffect(() => {
+    const update = () => {
+      if (headerRef.current) setHeaderHeight(headerRef.current.offsetHeight);
+      if (subHeaderRef.current) setSubHeaderHeight(subHeaderRef.current.offsetHeight);
+    };
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, []);
+
   async function handleStart() {
     if (roundsRemaining <= 0 || actionLoading) return;
     setActionLoading(true);
@@ -272,12 +287,20 @@ export default function QuizPage() {
     status === 'playing'
       ? Math.max(0, secondsLeft / QUIZ_DURATION_SEC)
       : 0;
+  const topPadding = headerHeight + subHeaderHeight;
 
   return (
-    <div className="min-h-screen bg-[#0a0f1e] flex flex-col items-center pt-20 px-4 pb-12">
+    <div className="min-h-screen bg-[#0a0f1e] flex flex-col items-center px-4 pb-12">
       <div
-        className="fixed left-0 right-0 z-50 w-full flex justify-center bg-[#0a0f1e] py-2 px-4"
-        style={{ top: 56 }}
+        ref={headerRef}
+        className="fixed top-0 left-0 right-0 z-50 w-full flex justify-center bg-[#0a0f1e] px-4 py-2"
+      >
+        <AppHeader />
+      </div>
+      <div
+        ref={subHeaderRef}
+        className="fixed left-0 right-0 z-40 w-full flex justify-center bg-[#0a0f1e] py-2 px-4"
+        style={{ top: headerHeight }}
       >
         <div className="w-full max-w-xl flex items-center justify-between gap-3">
           <Link
@@ -290,8 +313,7 @@ export default function QuizPage() {
           <span className="w-[56px]" aria-hidden />
         </div>
       </div>
-
-      <div className="w-full max-w-xl space-y-4">
+      <div className="w-full max-w-xl space-y-4" style={{ paddingTop: topPadding }}>
         {error ? (
           <p className="text-sm text-red-400 bg-red-950/30 border border-red-900/50 rounded-lg px-3 py-2">
             {error}

@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { AppHeader } from '@/components/AppHeader';
 import { YesNoButton, YesNoButtonGroup } from '@/components/YesNoButton';
 import {
   BET_SUBMIT_BG,
@@ -18,7 +19,6 @@ import { useTelegramUser } from '@/lib/useTelegramUser';
 // ─── 상수 ────────────────────────────────────────────────────────
 const MIN_BET = 10;
 const MAX_BET = 500;
-const GLOBAL_HEADER_HEIGHT = 56; // layout.tsx AppHeader 높이와 동일
 
 // ─── 타입 ────────────────────────────────────────────────────────
 type Market = {
@@ -50,6 +50,10 @@ export default function MarketBetPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [headerHeight, setHeaderHeight] = useState(0);
+  const [subHeaderHeight, setSubHeaderHeight] = useState(0);
+  const headerRef = useRef<HTMLDivElement>(null);
+  const subHeaderRef = useRef<HTMLDivElement>(null);
 
   // ─── 잔액 조회 ───────────────────────────────────────────────
   const loadBalance = useCallback(async () => {
@@ -93,6 +97,16 @@ export default function MarketBetPage() {
     if (side === 'yes') { setChoice('YES'); setSuccess(false); }
     else if (side === 'no') { setChoice('NO'); setSuccess(false); }
   }, [searchParams]);
+
+  useEffect(() => {
+    const update = () => {
+      if (headerRef.current) setHeaderHeight(headerRef.current.offsetHeight);
+      if (subHeaderRef.current) setSubHeaderHeight(subHeaderRef.current.offsetHeight);
+    };
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, []);
 
   // ─── 베팅 처리 ───────────────────────────────────────────────
   const pointsNum = Number(points);
@@ -167,14 +181,22 @@ export default function MarketBetPage() {
   const progressFill = getYesNoProgressFillStyles(market.yes_percent, market.no_percent);
   const marketEnded = isMarketEnded(market);
   const marketSettled = isMarketSettled(market);
+  const topPadding = headerHeight + subHeaderHeight;
 
   // ─── 렌더 ────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-[#0a0f1e] flex flex-col items-center pt-20 pb-4 px-4">
+    <div className="min-h-screen bg-[#0a0f1e] flex flex-col items-center pb-4 px-4">
+      <div
+        ref={headerRef}
+        className="fixed top-0 left-0 right-0 z-50 w-full flex justify-center bg-[#0a0f1e] px-4 py-2"
+      >
+        <AppHeader />
+      </div>
       {/* 상단 페이지 네비 */}
       <div
-        className="fixed left-0 right-0 z-50 w-full flex justify-center bg-[#0a0f1e] py-2 px-4"
-        style={{ top: GLOBAL_HEADER_HEIGHT }}
+        ref={subHeaderRef}
+        className="fixed left-0 right-0 z-40 w-full flex justify-center bg-[#0a0f1e] py-2 px-4"
+        style={{ top: headerHeight }}
       >
         <div className="w-full max-w-xl flex items-center justify-between gap-3">
           <Link
@@ -186,7 +208,7 @@ export default function MarketBetPage() {
           <p className="text-sm text-gray-300 truncate">마켓 상세</p>
         </div>
       </div>
-
+      <div className="w-full max-w-xl" style={{ paddingTop: topPadding }}>
       {/* 보유 포인트 */}
       <p className="w-full max-w-xl mb-6 text-sm text-gray-300">
         보유 포인트:{' '}
@@ -310,6 +332,7 @@ export default function MarketBetPage() {
             </button>
           </>
         )}
+      </div>
       </div>
     </div>
   );

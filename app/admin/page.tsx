@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { AppHeader } from '@/components/AppHeader';
 import { MARKET_CATEGORIES, normalizeCategory } from '@/lib/categories';
 import { isMarketExpiredByEndDate, toDatetimeLocalValue } from '@/lib/market';
 import { supabase } from '@/lib/supabase';
@@ -71,6 +72,8 @@ const STATUS_TABS: { value: StatusFilter; label: string }[] = [
 ];
 
 export default function AdminPage() {
+  const [headerHeight, setHeaderHeight] = useState(0);
+  const headerRef = useRef<HTMLDivElement>(null);
   const [markets, setMarkets] = useState<Market[]>([]);
   const [listLoading, setListLoading] = useState(true);
   const [resolvingId, setResolvingId] = useState<number | null>(null);
@@ -451,8 +454,24 @@ export default function AdminPage() {
     'px-3 py-2.5 text-left text-xs font-semibold text-gray-400 whitespace-nowrap';
   const tdClass = 'px-3 py-2.5 text-sm text-gray-300 align-middle';
 
+  useEffect(() => {
+    const update = () => {
+      if (headerRef.current) setHeaderHeight(headerRef.current.offsetHeight);
+    };
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, []);
+
   return (
-    <div className="min-h-screen bg-[#0f172a] flex flex-col items-center py-12 px-4">
+    <div className="min-h-screen bg-[#0f172a] flex flex-col items-center px-4 pb-12">
+      <div
+        ref={headerRef}
+        className="fixed top-0 left-0 right-0 z-50 w-full flex justify-center bg-[#0a0f1e] px-4 py-2"
+      >
+        <AppHeader />
+      </div>
+      <div className="w-full max-w-6xl flex flex-col items-center" style={{ paddingTop: headerHeight }}>
       <p className="text-amber-400 text-sm font-medium tracking-wide mb-2">
         관리자 전용
       </p>
@@ -464,7 +483,7 @@ export default function AdminPage() {
         ← 홈으로
       </Link>
 
-      <section className="w-full max-w-6xl mb-12">
+      <section className="w-full mb-12">
         <h2 className="text-lg font-semibold text-white mb-4">마켓 생성</h2>
         <form
           onSubmit={handleCreate}
@@ -998,6 +1017,7 @@ export default function AdminPage() {
           </div>
         )}
       </section>
+      </div>
     </div>
   );
 }

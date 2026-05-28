@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { AppHeader } from '@/components/AppHeader';
 import { supabase } from '@/lib/supabase';
 import { useTelegramUser } from '@/lib/useTelegramUser';
 
@@ -26,6 +27,8 @@ export default function LeaderboardPage() {
   const [users, setUsers] = useState<LeaderboardUser[]>([]);
   const [loading, setLoading] = useState(true);
   const { userId: currentUserId } = useTelegramUser();
+  const [headerHeight, setHeaderHeight] = useState(0);
+  const headerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     async function load() {
@@ -77,8 +80,24 @@ export default function LeaderboardPage() {
     load();
   }, []);
 
+  useEffect(() => {
+    const update = () => {
+      if (headerRef.current) setHeaderHeight(headerRef.current.offsetHeight);
+    };
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, []);
+
   return (
-    <div className="min-h-screen bg-[#0a0f1e] flex flex-col items-center py-12 px-4">
+    <div className="min-h-screen bg-[#0a0f1e] flex flex-col items-center px-4 pb-12">
+      <div
+        ref={headerRef}
+        className="fixed top-0 left-0 right-0 z-50 w-full flex justify-center bg-[#0a0f1e] px-4 py-2"
+      >
+        <AppHeader />
+      </div>
+      <div className="w-full max-w-xl flex flex-col items-center" style={{ paddingTop: headerHeight }}>
       <h1 className="text-3xl font-bold text-white mb-2">리더보드</h1>
       <Link
         href="/"
@@ -166,6 +185,7 @@ export default function LeaderboardPage() {
             })}
           </ul>
         )}
+      </div>
       </div>
     </div>
   );
