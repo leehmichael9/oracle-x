@@ -1,5 +1,4 @@
 'use client';
-import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -208,7 +207,6 @@ export default function Home() {
             const thumbnailSrc =
               m.image_url?.trim() ||
               getCategoryImage(normalizeCategory(m.category));
-            const isRemoteThumbnail = thumbnailSrc.startsWith('http');
 
             return (
               <div
@@ -223,13 +221,11 @@ export default function Home() {
                     className="shrink-0 rounded-lg overflow-hidden bg-[#0a0f1e]"
                     style={{ width: 64, height: 64, minWidth: 64 }}
                   >
-                    <Image
+                    <img
                       src={thumbnailSrc}
-                      width={64}
-                      height={64}
+                      style={{ width: 64, height: 64, minWidth: 64, borderRadius: 8, objectFit: 'cover' }}
                       className="rounded-lg object-cover"
                       alt={m.category}
-                      unoptimized={isRemoteThumbnail}
                     />
                   </div>
 
