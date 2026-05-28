@@ -75,10 +75,8 @@ export default function Home() {
   const [breakingOnly, setBreakingOnly] = useState(false);
   const [navTab, setNavTab] = useState<BottomNavTab>('home');
   const [localHeaderHeight, setLocalHeaderHeight] = useState(0);
-  const [stickyTabsHeight, setStickyTabsHeight] = useState(0);
 
   const localHeaderRef = useRef<HTMLDivElement>(null);
-  const stickyTabsRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const categoryTabsRef = useRef<HTMLDivElement>(null);
   const statusTabsRef = useRef<HTMLDivElement>(null);
@@ -162,7 +160,6 @@ export default function Home() {
   useEffect(() => {
     const updateHeights = () => {
       setLocalHeaderHeight(localHeaderRef.current?.offsetHeight ?? 0);
-      setStickyTabsHeight(stickyTabsRef.current?.offsetHeight ?? 0);
     };
     const raf = window.requestAnimationFrame(updateHeights);
     window.addEventListener('resize', updateHeights);
@@ -173,7 +170,7 @@ export default function Home() {
   }, [loading, userLoading]);
 
   const contentTopPadding = Math.max(
-    localHeaderHeight + stickyTabsHeight + FIXED_TOP_GAP,
+    localHeaderHeight + FIXED_TOP_GAP,
     MIN_CONTENT_TOP_PADDING,
   );
 
@@ -260,50 +257,41 @@ export default function Home() {
             </button>
           ))}
         </div>
+        <div className="w-full max-w-xl mt-2">
+          <div
+            ref={statusTabsRef}
+            className="flex gap-2 overflow-x-auto no-scrollbar"
+          >
+            {([
+              { value: 'active' as const, label: '진행중' },
+              { value: 'resolved' as const, label: '종료' },
+            ] as const).map(({ value, label }) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => {
+                  setStatusFilter(value);
+                  setBreakingOnly(false);
+                  setNavTab('home');
+                }}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all border whitespace-nowrap shrink-0 ${
+                  statusFilter === value
+                    ? 'text-white border-[#34d399]/40'
+                    : 'bg-[#111827] text-gray-400 border-white/10 hover:text-white hover:border-white/20'
+                }`}
+                style={statusFilter === value ? { backgroundColor: 'rgba(52,211,153,0.2)' } : undefined}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
       {loading || userLoading ? (
         <p className="text-gray-400">로딩 중...</p>
       ) : (
         <div className="flex flex-col gap-4 w-full max-w-xl">
-          {/* 카테고리 · 상태 탭 고정 */}
-          <div
-            ref={stickyTabsRef}
-            className="space-y-2 fixed left-0 right-0 z-30 bg-[#0a0f1e] px-4 py-2 flex justify-center"
-            style={{ top: localHeaderTop + localHeaderHeight }}
-          >
-            <div className="w-full max-w-xl space-y-2">
-              {/* 진행중 / 종료 탭 */}
-              <div
-                ref={statusTabsRef}
-                className="flex gap-2 overflow-x-auto no-scrollbar"
-              >
-                {([
-                  { value: 'active' as const, label: '진행중' },
-                  { value: 'resolved' as const, label: '종료' },
-                ] as const).map(({ value, label }) => (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() => {
-                      setStatusFilter(value);
-                      setBreakingOnly(false);
-                      setNavTab('home');
-                    }}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all border whitespace-nowrap shrink-0 ${
-                      statusFilter === value
-                        ? 'text-white border-[#34d399]/40'
-                        : 'bg-[#111827] text-gray-400 border-white/10 hover:text-white hover:border-white/20'
-                    }`}
-                    style={statusFilter === value ? { backgroundColor: 'rgba(52,211,153,0.2)' } : undefined}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-
           {/* 빈 상태 */}
           {filteredMarkets.length === 0 ? (
             <p className="text-gray-400 text-center py-8">해당 조건의 마켓이 없습니다.</p>
