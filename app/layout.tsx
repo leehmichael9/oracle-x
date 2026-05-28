@@ -23,7 +23,7 @@ export default function RootLayout({
         <div className="fixed top-0 left-0 right-0 z-50 bg-[#0a0f1e] px-4 py-2 flex justify-center">
           <AppHeader />
         </div>
-        <main className="pt-16 min-h-screen">
+        <main className="pt-20 min-h-screen">
           {children}
         </main>
       </body>

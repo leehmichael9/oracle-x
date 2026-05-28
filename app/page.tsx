@@ -20,7 +20,7 @@ import { supabase } from '@/lib/supabase';
 import { useTelegramUser } from '@/lib/useTelegramUser';
 
 // ─── 상수 (컴포넌트 외부 — 렌더링마다 재생성 방지) ───────────────
-const GLOBAL_HEADER_HEIGHT = 56;
+const GLOBAL_HEADER_HEIGHT = 80;
 const FIXED_TOP_GAP = 16;
 const MIN_CONTENT_TOP_PADDING = 120;
 const NEW_MARKET_MS = 72 * 60 * 60 * 1000;
@@ -167,9 +167,6 @@ export default function Home() {
         className="fixed left-0 right-0 z-40 w-full flex flex-col items-center bg-[#0a0f1e] px-4 pt-2 pb-3"
         style={{ top: GLOBAL_HEADER_HEIGHT }}
       >
-        <p className="w-full max-w-xl text-xs text-gray-400 mb-2">
-          Asia&apos;s No.1 Prediction Market
-        </p>
         <div className="relative w-full max-w-xl">
           <span
             className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
