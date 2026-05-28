@@ -55,6 +55,8 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState('');
   const [breakingOnly, setBreakingOnly] = useState(false);
   const [navTab, setNavTab] = useState<BottomNavTab>('home');
+  const [stickyHeaderHeight, setStickyHeaderHeight] = useState(0);
+  const stickyHeaderRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const categoryTabsRef = useRef<HTMLDivElement>(null);
   const statusTabsRef = useRef<HTMLDivElement>(null);
@@ -129,45 +131,62 @@ export default function Home() {
     el.addEventListener('wheel', handler, { passive: false });
     return () => el.removeEventListener('wheel', handler);
   }, []);
+
+  useEffect(() => {
+    const updateStickyHeaderHeight = () => {
+      setStickyHeaderHeight(stickyHeaderRef.current?.offsetHeight ?? 0);
+    };
+    updateStickyHeaderHeight();
+    window.addEventListener('resize', updateStickyHeaderHeight);
+    return () => window.removeEventListener('resize', updateStickyHeaderHeight);
+  }, []);
+
   return (
     <div className="min-h-screen bg-[#0a0f1e] flex flex-col items-center py-4 px-4 pb-20">
-      <AppHeader />
-      <p className="text-gray-400 text-sm mb-4 w-full max-w-xl">
-        Asia&apos;s No.1 Prediction Market
-      </p>
+      <div
+        ref={stickyHeaderRef}
+        className="sticky top-0 z-50 w-full flex flex-col items-center bg-[#0a0f1e] pb-3"
+      >
+        <AppHeader />
+        <p className="text-gray-400 text-sm mb-4 w-full max-w-xl">
+          Asia&apos;s No.1 Prediction Market
+        </p>
+        <div className="relative w-full max-w-xl">
+          <span
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
+            aria-hidden
+          >
+            🔍
+          </span>
+          <input
+            ref={searchInputRef}
+            type="search"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onFocus={() => setNavTab('search')}
+            placeholder="마켓 검색"
+            className="w-full rounded-xl bg-[#111827] border border-white/10 py-2.5 pl-10 pr-10 text-sm text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50"
+          />
+          {searchQuery ? (
+            <button
+              type="button"
+              aria-label="검색어 초기화"
+              onClick={() => setSearchQuery('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white text-sm font-medium transition-colors"
+            >
+              ✕
+            </button>
+          ) : null}
+        </div>
+      </div>
       {loading || userLoading ? (
         <p className="text-gray-400">로딩 중...</p>
       ) : (
         <div className="flex flex-col gap-4 w-full max-w-xl">
-          <div className="relative">
-            <span
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
-              aria-hidden
-            >
-              🔍
-            </span>
-            <input
-              ref={searchInputRef}
-              type="search"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onFocus={() => setNavTab('search')}
-              placeholder="마켓 검색"
-              className="w-full rounded-xl bg-[#111827] border border-white/10 py-2.5 pl-10 pr-10 text-sm text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50"
-            />
-            {searchQuery ? (
-              <button
-                type="button"
-                aria-label="검색어 초기화"
-                onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white text-sm font-medium transition-colors"
-              >
-                ✕
-              </button>
-            ) : null}
-          </div>
-
-          <div className="space-y-2">
+          <div
+            className="space-y-2 sticky z-40 bg-[#0a0f1e] py-2"
+            style={{ top: stickyHeaderHeight }}
+          >
             <div
               ref={categoryTabsRef}
               className="flex gap-2 overflow-x-auto no-scrollbar"

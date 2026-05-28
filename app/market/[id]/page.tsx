@@ -195,13 +195,18 @@ export default function MarketBetPage() {
   );
 
   return (
-    <div className="min-h-screen bg-[#0a0f1e] flex flex-col items-center py-12 px-4">
-      <Link
-        href="/"
-        className="self-start max-w-xl w-full mb-4 text-sm text-gray-400 hover:text-white transition-colors"
-      >
-        ← 마켓 목록
-      </Link>
+    <div className="min-h-screen bg-[#0a0f1e] flex flex-col items-center py-4 px-4">
+      <div className="sticky top-0 z-50 w-full flex justify-center bg-[#0a0f1e] py-2">
+        <div className="w-full max-w-xl flex items-center justify-between gap-3">
+          <Link
+            href="/"
+            className="text-sm text-gray-400 hover:text-white transition-colors whitespace-nowrap"
+          >
+            ← 마켓 목록
+          </Link>
+          <p className="text-sm text-gray-300 truncate">마켓 상세</p>
+        </div>
+      </div>
 
       <p className="w-full max-w-xl mb-6 text-sm text-gray-300">
         보유 포인트:{' '}
