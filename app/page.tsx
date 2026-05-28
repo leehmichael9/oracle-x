@@ -20,7 +20,7 @@ import { supabase } from '@/lib/supabase';
 import { useTelegramUser } from '@/lib/useTelegramUser';
 
 // ─── 상수 (컴포넌트 외부 — 렌더링마다 재생성 방지) ───────────────
-const GLOBAL_HEADER_HEIGHT = 80;
+const GLOBAL_HEADER_HEIGHT = 88;
 const LOCAL_HEADER_OVERLAP = 2;
 const FIXED_TOP_GAP = 16;
 const MIN_CONTENT_TOP_PADDING = 188;

@@ -7,16 +7,16 @@ const iconButtonClass =
 
 export function AppHeader() {
   return (
-    <div className="w-full max-w-xl">
+    <div className="w-full max-w-xl py-4">
       <header className="flex items-center justify-between">
         <Link
           href="/"
           className="group"
         >
-          <p className="text-xl font-bold text-white tracking-widest group-hover:text-emerald-300 transition-colors">
+          <p className="text-2xl font-bold text-white tracking-widest group-hover:text-emerald-300 transition-colors">
             ORACLE-X
           </p>
-          <p className="text-[10px] text-[#6b7280] tracking-wider leading-none mt-0.5">
+          <p className="text-xs text-[#94a3b8] tracking-wider leading-none mt-0.5">
             Asia&apos;s No.1 Prediction Market
           </p>
         </Link>
