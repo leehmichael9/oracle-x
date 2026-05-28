@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import Script from 'next/script';
-import { AppHeader } from '@/components/AppHeader';
 
 export const metadata: Metadata = {
   title: "Oracle-X | 아시아 No.1 예측마켓",
@@ -20,10 +19,7 @@ export default function RootLayout({
           src="https://telegram.org/js/telegram-web-app.js"
           strategy="beforeInteractive"
         />
-        <div className="fixed top-0 left-0 right-0 z-50 bg-[#0a0f1e] px-4 py-2 flex justify-center">
-          <AppHeader />
-        </div>
-        <main className="pt-20 min-h-screen">
+        <main className="min-h-screen">
           {children}
         </main>
       </body>

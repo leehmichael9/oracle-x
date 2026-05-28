@@ -1,4 +1,5 @@
 'use client';
+import { AppHeader } from '@/components/AppHeader';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -19,10 +20,6 @@ import {
 import { supabase } from '@/lib/supabase';
 import { useTelegramUser } from '@/lib/useTelegramUser';
 
-// ─── 상수 (컴포넌트 외부 — 렌더링마다 재생성 방지) ───────────────
-const GLOBAL_HEADER_HEIGHT = 88;
-const FIXED_TOP_GAP = 16;
-const MIN_CONTENT_TOP_PADDING = 188;
 const NEW_MARKET_MS = 72 * 60 * 60 * 1000;
 const TRENDING_TAGS: {
   label: string;
@@ -65,7 +62,6 @@ function isNewMarket(createdAt: string | undefined): boolean {
 
 // ─── 메인 컴포넌트 ───────────────────────────────────────────────
 export default function Home() {
-  const localHeaderTop = GLOBAL_HEADER_HEIGHT;
   const router = useRouter();
   const [markets, setMarkets] = useState<Market[]>([]);
   const [loading, setLoading] = useState(true);
@@ -74,15 +70,15 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState('');
   const [breakingOnly, setBreakingOnly] = useState(false);
   const [navTab, setNavTab] = useState<BottomNavTab>('home');
-  const [localHeaderHeight, setLocalHeaderHeight] = useState(0);
+  const [headerHeight, setHeaderHeight] = useState(0);
 
-  const localHeaderRef = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const categoryTabsRef = useRef<HTMLDivElement>(null);
   const statusTabsRef = useRef<HTMLDivElement>(null);
   const trendingTagsRef = useRef<HTMLDivElement>(null);
 
-  const { userId, loading: userLoading } = useTelegramUser();
+  const { loading: userLoading } = useTelegramUser();
 
   // ─── 마켓 필터링 ─────────────────────────────────────────────
   const filteredMarkets = useMemo(() => {
@@ -156,39 +152,31 @@ export default function Home() {
     return () => el.removeEventListener('wheel', handler);
   }, []);
 
-  // ─── 고정 헤더 높이 측정 (콘텐츠 top padding 계산용) ────────
+  // ─── 고정 헤더 높이 실측 (콘텐츠 top padding 계산용) ────────
   useEffect(() => {
-    const updateHeights = () => {
-      setLocalHeaderHeight(localHeaderRef.current?.offsetHeight ?? 0);
+    const update = () => {
+      if (headerRef.current) {
+        setHeaderHeight(headerRef.current.offsetHeight);
+      }
     };
-    const raf = window.requestAnimationFrame(updateHeights);
-    window.addEventListener('resize', updateHeights);
+    update();
+    window.addEventListener('resize', update);
     return () => {
-      window.cancelAnimationFrame(raf);
-      window.removeEventListener('resize', updateHeights);
+      window.removeEventListener('resize', update);
     };
-  }, [loading, userLoading]);
-
-  const contentTopPadding = Math.max(
-    localHeaderHeight + FIXED_TOP_GAP,
-    MIN_CONTENT_TOP_PADDING,
-  );
+  }, []);
 
   // ─── 렌더 ────────────────────────────────────────────────────
   return (
-    <div
-      className="min-h-screen bg-[#0a0f1e] flex flex-col items-center px-4 pb-20"
-      style={{ paddingTop: contentTopPadding }}
-    >
-      {/* 검색창 고정 헤더 */}
+    <div className="min-h-screen bg-[#0a0f1e] flex flex-col items-center px-4 pb-20">
       <div
-        ref={localHeaderRef}
-        className="fixed left-0 right-0 z-40 w-full flex flex-col items-center bg-[#0a0f1e] px-4 pb-3"
-        style={{ top: localHeaderTop }}
+        ref={headerRef}
+        className="fixed top-0 left-0 right-0 z-50 w-full flex flex-col items-center bg-[#0a0f1e] px-4 py-2"
       >
+        <AppHeader />
         <div
           ref={categoryTabsRef}
-          className="w-full max-w-xl flex gap-2 overflow-x-auto no-scrollbar mb-2"
+          className="w-full max-w-xl flex gap-2 overflow-x-auto no-scrollbar"
         >
           {(['전체', ...MARKET_CATEGORIES] as CategoryFilter[]).map((cat) => (
             <button
@@ -210,7 +198,7 @@ export default function Home() {
             </button>
           ))}
         </div>
-        <div className="relative w-full max-w-xl">
+        <div className="relative w-full max-w-xl mt-2">
           <span
             className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
             aria-hidden
@@ -288,10 +276,11 @@ export default function Home() {
         </div>
       </div>
 
+      <div className="w-full max-w-xl" style={{ paddingTop: headerHeight }}>
       {loading || userLoading ? (
         <p className="text-gray-400">로딩 중...</p>
       ) : (
-        <div className="flex flex-col gap-4 w-full max-w-xl">
+        <div className="flex flex-col gap-4 w-full">
           {/* 빈 상태 */}
           {filteredMarkets.length === 0 ? (
             <p className="text-gray-400 text-center py-8">해당 조건의 마켓이 없습니다.</p>
@@ -390,6 +379,7 @@ export default function Home() {
           })}
         </div>
       )}
+      </div>
 
       <BottomNav
         activeTab={navTab}
