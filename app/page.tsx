@@ -21,7 +21,6 @@ import { useTelegramUser } from '@/lib/useTelegramUser';
 
 // ─── 상수 (컴포넌트 외부 — 렌더링마다 재생성 방지) ───────────────
 const GLOBAL_HEADER_HEIGHT = 88;
-const LOCAL_HEADER_OVERLAP = 2;
 const FIXED_TOP_GAP = 16;
 const MIN_CONTENT_TOP_PADDING = 188;
 const NEW_MARKET_MS = 72 * 60 * 60 * 1000;
@@ -66,7 +65,7 @@ function isNewMarket(createdAt: string | undefined): boolean {
 
 // ─── 메인 컴포넌트 ───────────────────────────────────────────────
 export default function Home() {
-  const localHeaderTop = GLOBAL_HEADER_HEIGHT - LOCAL_HEADER_OVERLAP;
+  const localHeaderTop = GLOBAL_HEADER_HEIGHT;
   const router = useRouter();
   const [markets, setMarkets] = useState<Market[]>([]);
   const [loading, setLoading] = useState(true);
@@ -174,7 +173,7 @@ export default function Home() {
   }, [loading, userLoading]);
 
   const contentTopPadding = Math.max(
-    localHeaderHeight + stickyTabsHeight + FIXED_TOP_GAP - LOCAL_HEADER_OVERLAP,
+    localHeaderHeight + stickyTabsHeight + FIXED_TOP_GAP,
     MIN_CONTENT_TOP_PADDING,
   );
 
