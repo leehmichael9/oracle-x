@@ -189,3 +189,21 @@ export function getCategoryStyle(category: string): CategoryStyle {
   }
   return DEFAULT_CATEGORY_STYLE;
 }
+
+const CATEGORY_IMAGE_MAP: Record<string, string> = {
+  '정치/시사': '/category/politics.svg',
+  지정학: '/category/geopolitics.svg',
+  크립토: '/category/crypto.svg',
+  '경제/금융': '/category/economy.svg',
+  '테크/AI': '/category/tech.svg',
+  스포츠: '/category/sports.svg',
+  대중문화: '/category/culture.svg',
+  'K-엔터': '/category/kenter.svg',
+  '한국 증시/경제': '/category/korea_market.svg',
+  '사회/이슈': '/category/social.svg',
+};
+
+export function getCategoryImage(category: string): string {
+  const normalized = normalizeCategory(category);
+  return CATEGORY_IMAGE_MAP[normalized] ?? '/category/social.svg';
+}

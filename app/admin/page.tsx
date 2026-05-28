@@ -17,6 +17,7 @@ type Market = {
   result: string | null;
   end_date: string | null;
   is_breaking: boolean;
+  image_url: string | null;
 };
 
 type AdminDisplayStatus = 'active' | 'ended' | 'settled';
@@ -85,6 +86,7 @@ export default function AdminPage() {
   const [noPercent, setNoPercent] = useState('50');
   const [endDate, setEndDate] = useState('');
   const [isBreaking, setIsBreaking] = useState(false);
+  const [imageUrl, setImageUrl] = useState('');
   const [editingEndDateId, setEditingEndDateId] = useState<number | null>(null);
   const [editEndDate, setEditEndDate] = useState('');
   const [savingEndDateId, setSavingEndDateId] = useState<number | null>(null);
@@ -93,6 +95,10 @@ export default function AdminPage() {
   const [editSubCategory, setEditSubCategory] = useState('');
   const [savingSubCategoryId, setSavingSubCategoryId] = useState<number | null>(null);
   const [subCategoryEditError, setSubCategoryEditError] = useState<string | null>(null);
+  const [editingImageUrlId, setEditingImageUrlId] = useState<number | null>(null);
+  const [editImageUrl, setEditImageUrl] = useState('');
+  const [savingImageUrlId, setSavingImageUrlId] = useState<number | null>(null);
+  const [imageUrlEditError, setImageUrlEditError] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [formSuccess, setFormSuccess] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -202,6 +208,7 @@ export default function AdminPage() {
         result: null,
         end_date: endDateIso,
         is_breaking: isBreaking,
+        image_url: imageUrl.trim() || null,
       });
 
       if (error) {
@@ -216,6 +223,7 @@ export default function AdminPage() {
       setNoPercent('50');
       setEndDate('');
       setIsBreaking(false);
+      setImageUrl('');
       setFormSuccess(true);
       await fetch('/api/notify', {
         method: 'POST',
@@ -286,10 +294,48 @@ export default function AdminPage() {
     await loadMarkets();
   }
 
-  function startSubCategoryEdit(market: Market) {
-    setSubCategoryEditError(null);
+  function startImageUrlEdit(market: Market) {
+    setImageUrlEditError(null);
     setExpandSettleId(null);
     setEditingEndDateId(null);
+    setEditingSubCategoryId(null);
+    setEditingImageUrlId(market.id);
+    setEditImageUrl(market.image_url ?? '');
+  }
+
+  function cancelImageUrlEdit() {
+    setEditingImageUrlId(null);
+    setImageUrlEditError(null);
+  }
+
+  async function handleSaveImageUrl(marketId: number) {
+    setSavingImageUrlId(marketId);
+    setImageUrlEditError(null);
+    try {
+      const value = editImageUrl.trim() || null;
+      const { error } = await supabase
+        .from('markets')
+        .update({ image_url: value })
+        .eq('id', marketId);
+
+      if (error) {
+        setImageUrlEditError(error.message ?? '이미지 URL 저장에 실패했습니다.');
+        return;
+      }
+
+      setEditingImageUrlId(null);
+      await loadMarkets();
+    } finally {
+      setSavingImageUrlId(null);
+    }
+  }
+
+  function startSubCategoryEdit(market: Market) {
+    setSubCategoryEditError(null);
+    setImageUrlEditError(null);
+    setExpandSettleId(null);
+    setEditingEndDateId(null);
+    setEditingImageUrlId(null);
     setEditingSubCategoryId(market.id);
     setEditSubCategory(market.sub_category ?? '');
   }
@@ -324,8 +370,10 @@ export default function AdminPage() {
   function startEndDateEdit(market: Market) {
     setEndDateEditError(null);
     setSubCategoryEditError(null);
+    setImageUrlEditError(null);
     setExpandSettleId(null);
     setEditingSubCategoryId(null);
+    setEditingImageUrlId(null);
     setEditingEndDateId(market.id);
     setEditEndDate(toDatetimeLocalValue(market.end_date));
   }
@@ -456,6 +504,23 @@ export default function AdminPage() {
                 setFormSuccess(false);
               }}
               placeholder="세분류 입력 (예: XRP, 국내정치, FOMC·금리)"
+              className="w-full rounded-lg bg-[#0a0f1e] border border-white/15 px-4 py-3 text-white placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="image_url" className="block text-sm text-gray-400 mb-2">
+              이미지 URL <span className="text-gray-600">(선택)</span>
+            </label>
+            <input
+              id="image_url"
+              type="url"
+              value={imageUrl}
+              onChange={(e) => {
+                setImageUrl(e.target.value);
+                setFormSuccess(false);
+              }}
+              placeholder="https://... (비워두면 카테고리 기본 이미지 사용)"
               className="w-full rounded-lg bg-[#0a0f1e] border border-white/15 px-4 py-3 text-white placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50"
             />
           </div>
@@ -636,6 +701,7 @@ export default function AdminPage() {
                   <th className={thClass}>#</th>
                   <th className={`${thClass} min-w-[200px]`}>질문</th>
                   <th className={thClass}>대분류</th>
+                  <th className={thClass}>이미지 URL</th>
                   <th className={thClass}>세분류</th>
                   <th className={thClass}>상태</th>
                   <th className={thClass}>YES% / NO%</th>
@@ -662,6 +728,7 @@ export default function AdminPage() {
                   const isSettled = displayStatus === 'settled';
                   const isEditingEndDate = editingEndDateId === m.id;
                   const isEditingSubCategory = editingSubCategoryId === m.id;
+                  const isEditingImageUrl = editingImageUrlId === m.id;
                   const isSettleExpanded = expandSettleId === m.id;
                   const isQuestionExpanded = expandedQuestionIds.has(m.id);
 
@@ -700,6 +767,55 @@ export default function AdminPage() {
                       </td>
                       <td className={`${tdClass} text-xs whitespace-nowrap`}>
                         {normalizeCategory(m.category)}
+                      </td>
+                      <td className={`${tdClass} text-xs min-w-[140px] max-w-[200px]`}>
+                        {isEditingImageUrl ? (
+                          <div className="flex flex-col gap-1">
+                            <input
+                              type="url"
+                              value={editImageUrl}
+                              onChange={(e) => setEditImageUrl(e.target.value)}
+                              placeholder="https://..."
+                              className="w-full min-w-[120px] rounded bg-[#0a0f1e] border border-white/15 px-1.5 py-1 text-gray-200 text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500/50"
+                            />
+                            <div className="flex gap-1">
+                              <button
+                                type="button"
+                                disabled={savingImageUrlId === m.id}
+                                onClick={() => handleSaveImageUrl(m.id)}
+                                className="px-2 py-0.5 rounded text-xs bg-emerald-600 text-white hover:bg-emerald-500 disabled:opacity-50"
+                              >
+                                저장
+                              </button>
+                              <button
+                                type="button"
+                                disabled={savingImageUrlId === m.id}
+                                onClick={cancelImageUrlEdit}
+                                className="px-2 py-0.5 rounded text-xs bg-white/5 text-gray-300 hover:bg-white/10"
+                              >
+                                취소
+                              </button>
+                            </div>
+                            {imageUrlEditError ? (
+                              <p className="text-[10px] text-red-400">{imageUrlEditError}</p>
+                            ) : null}
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => startImageUrlEdit(m)}
+                            className="text-left rounded p-1 -m-1 hover:bg-white/5 transition-colors max-w-full"
+                            title="클릭하여 이미지 URL 수정"
+                          >
+                            {m.image_url?.trim() ? (
+                              <span className="text-gray-300 truncate block max-w-[180px]">
+                                {m.image_url.trim()}
+                              </span>
+                            ) : (
+                              <span className="text-gray-600">—</span>
+                            )}
+                          </button>
+                        )}
                       </td>
                       <td className={`${tdClass} text-xs min-w-[90px]`}>
                         {isEditingSubCategory ? (

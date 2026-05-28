@@ -1,4 +1,5 @@
 'use client';
+import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -6,9 +7,10 @@ import { AppHeader } from '@/components/AppHeader';
 import { BottomNav, type BottomNavTab } from '@/components/BottomNav';
 import { YesNoButton, YesNoButtonGroup } from '@/components/YesNoButton';
 import {
-  getCategoryStyle,
+  getCategoryImage,
   getSettledResultBadgeStyle,
   MARKET_CATEGORIES,
+  normalizeCategory,
 } from '@/lib/categories';
 import {
   isMarketActiveForFilter,
@@ -35,6 +37,7 @@ type Market = {
   created_at: string;
   end_date: string | null;
   is_breaking: boolean | null;
+  image_url: string | null;
 };
 
 function isNewMarket(createdAt: string | undefined): boolean {
@@ -200,9 +203,12 @@ export default function Home() {
           ) : null}
 
           {filteredMarkets.map((m) => {
-            const { emoji, gradient } = getCategoryStyle(m.category);
             const showBreaking = Boolean(m.is_breaking);
             const showNew = isNewMarket(m.created_at);
+            const thumbnailSrc =
+              m.image_url?.trim() ||
+              getCategoryImage(normalizeCategory(m.category));
+            const isRemoteThumbnail = thumbnailSrc.startsWith('http');
 
             return (
               <div
@@ -214,18 +220,17 @@ export default function Home() {
                   className="flex items-center gap-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#34d399]/40 rounded-lg"
                 >
                   <div
-                    className="shrink-0 w-16 h-16 rounded-lg flex items-center justify-center"
-                    style={{ background: gradient }}
-                    aria-hidden
+                    className="shrink-0 rounded-lg overflow-hidden bg-[#0a0f1e]"
+                    style={{ width: 64, height: 64, minWidth: 64 }}
                   >
-                    <span
-                      style={{
-                        fontSize: '28px',
-                        fontFamily: '"Segoe UI Emoji", "Apple Color Emoji", sans-serif',
-                      }}
-                    >
-                      {emoji}
-                    </span>
+                    <Image
+                      src={thumbnailSrc}
+                      width={64}
+                      height={64}
+                      className="rounded-lg object-cover"
+                      alt={m.category}
+                      unoptimized={isRemoteThumbnail}
+                    />
                   </div>
 
                   <div className="flex-1 min-w-0">
