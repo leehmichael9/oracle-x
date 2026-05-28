@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Script from 'next/script'
+import { AppHeader } from '@/components/AppHeader';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -23,12 +24,17 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-      return (
-        <html lang="en" suppressHydrationWarning>
-        <body className={`${geistSans.variable} ${geistMono.variable} min-h-full flex flex-col antialiased`}>
-         <Script src="https://telegram.org/js/telegram-web-app.js" strategy="beforeInteractive" />
+  return (
+    <html lang="en" suppressHydrationWarning>
+      <body className={`${geistSans.variable} ${geistMono.variable} min-h-full flex flex-col antialiased`}>
+        <Script src="https://telegram.org/js/telegram-web-app.js" strategy="beforeInteractive" />
+        <div className="fixed top-0 left-0 right-0 z-50 bg-[#0a0f1e] px-4 py-2 flex justify-center">
+          <AppHeader />
+        </div>
+        <main className="pt-16 min-h-screen">
           {children}
-        </body>
-      </html>
-    );
+        </main>
+      </body>
+    </html>
+  );
 }

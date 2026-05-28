@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
-import { AppHeader } from '@/components/AppHeader';
 import { BottomNav, type BottomNavTab } from '@/components/BottomNav';
 import { NO_COLOR, YES_COLOR } from '@/lib/categories';
 import { buildInviteLink } from '@/lib/referral';
@@ -148,13 +147,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0f1e] flex flex-col items-center pt-20 px-4 pb-20">
-      <div className="fixed top-0 left-0 right-0 z-50 w-full flex justify-center bg-[#0a0f1e] py-1 px-4">
-        <div className="w-full max-w-xl">
-          <AppHeader />
-        </div>
-      </div>
-
+    <div className="min-h-screen bg-[#0a0f1e] flex flex-col items-center pt-4 px-4 pb-20">
       <div className="w-full max-w-xl space-y-4">
         <h1 className="text-xl font-bold text-white">내 정보</h1>
 
