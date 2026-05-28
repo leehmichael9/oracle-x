@@ -56,7 +56,18 @@ export default function Home() {
   const [breakingOnly, setBreakingOnly] = useState(false);
   const [navTab, setNavTab] = useState<BottomNavTab>('home');
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const categoryTabsRef = useRef<HTMLDivElement>(null);
+  const statusTabsRef = useRef<HTMLDivElement>(null);
   const { userId, loading: userLoading } = useTelegramUser();
+
+  function handleHorizontalWheel(
+    e: React.WheelEvent<HTMLDivElement>,
+    targetRef: React.RefObject<HTMLDivElement | null>,
+  ) {
+    if (!targetRef.current) return;
+    e.preventDefault();
+    targetRef.current.scrollLeft += e.deltaY;
+  }
 
   const filteredMarkets = useMemo(() => {
     const keyword = searchQuery.trim().toLowerCase();
@@ -141,8 +152,10 @@ export default function Home() {
 
           <div className="space-y-2">
             <div
+              ref={categoryTabsRef}
               className="flex gap-2 overflow-x-auto no-scrollbar"
               style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+              onWheel={(e) => handleHorizontalWheel(e, categoryTabsRef)}
             >
               {(['전체', ...MARKET_CATEGORIES] as CategoryFilter[]).map((cat) => (
                 <button
@@ -169,8 +182,10 @@ export default function Home() {
               ))}
             </div>
             <div
+              ref={statusTabsRef}
               className="flex gap-2 overflow-x-auto no-scrollbar"
               style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+              onWheel={(e) => handleHorizontalWheel(e, statusTabsRef)}
             >
               {(
                 [
