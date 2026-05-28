@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { AppHeader } from '@/components/AppHeader';
 import { YesNoButton, YesNoButtonGroup } from '@/components/YesNoButton';
 import {
@@ -98,14 +98,34 @@ export default function MarketBetPage() {
     else if (side === 'no') { setChoice('NO'); setSuccess(false); }
   }, [searchParams]);
 
-  useEffect(() => {
-    const update = () => {
-      if (headerRef.current) setHeaderHeight(headerRef.current.offsetHeight);
-      if (subHeaderRef.current) setSubHeaderHeight(subHeaderRef.current.offsetHeight);
+  useLayoutEffect(() => {
+    const measureHeight = (el: HTMLDivElement | null) => {
+      if (!el) return 0;
+      return Math.ceil(el.offsetHeight || el.getBoundingClientRect().height || 0);
     };
+
+    const update = () => {
+      setHeaderHeight(measureHeight(headerRef.current));
+      setSubHeaderHeight(measureHeight(subHeaderRef.current));
+    };
+
     update();
+    const rafId = window.requestAnimationFrame(update);
+
     window.addEventListener('resize', update);
-    return () => window.removeEventListener('resize', update);
+
+    const headerObserver = headerRef.current ? new ResizeObserver(update) : null;
+    const subHeaderObserver = subHeaderRef.current ? new ResizeObserver(update) : null;
+
+    if (headerRef.current && headerObserver) headerObserver.observe(headerRef.current);
+    if (subHeaderRef.current && subHeaderObserver) subHeaderObserver.observe(subHeaderRef.current);
+
+    return () => {
+      window.cancelAnimationFrame(rafId);
+      window.removeEventListener('resize', update);
+      headerObserver?.disconnect();
+      subHeaderObserver?.disconnect();
+    };
   }, []);
 
   // ─── 베팅 처리 ───────────────────────────────────────────────
