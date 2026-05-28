@@ -196,6 +196,9 @@ export default function Home() {
         <p className="text-gray-400">로딩 중...</p>
       ) : (
         <div className="flex flex-col gap-4 w-full max-w-xl">
+          <p className="text-sm text-gray-400">
+            Asia&apos;s No.1 Prediction Market
+          </p>
           <div
             ref={stickyTabsRef}
             className="space-y-2 fixed left-0 right-0 z-30 bg-[#0a0f1e] px-4 py-2 flex justify-center"
