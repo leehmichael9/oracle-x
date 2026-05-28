@@ -9,21 +9,36 @@ import { buildInviteLink } from '@/lib/referral';
 import { supabase } from '@/lib/supabase';
 import { useTelegramUser } from '@/lib/useTelegramUser';
 
+// ─── 타입 ────────────────────────────────────────────────────────
+interface TelegramWebApp {
+  initDataUnsafe?: {
+    user?: { id: number };
+  };
+}
+
 type PointHistoryItem = {
   amount: number;
   reason: string;
   created_at: string;
 };
 
-const REASON_LABELS: Record<string, string> = {
-  quiz_correct: '🧩 퀴즈 정답',
-  referral_signup: '👥 친구 초대 가입',
-  referral_bet_completed: '👥 친구 첫 베팅',
-  bet_win: '🏆 베팅 적중',
-  signup_bonus: '🎁 가입 보너스',
-  daily_checkin: '📅 출석 체크',
+type ReferralStats = {
+  referral_code: string;
+  invite_count: number;
+  total_referral_points: number;
 };
 
+// ─── 상수 ────────────────────────────────────────────────────────
+const REASON_LABELS: Record<string, string> = {
+  quiz_correct:           '🧩 퀴즈 정답',
+  referral_signup:        '👥 친구 초대 가입',
+  referral_bet_completed: '👥 친구 첫 베팅',
+  bet_win:                '🏆 베팅 적중',
+  signup_bonus:           '🎁 가입 보너스',
+  daily_checkin:          '📅 출석 체크',
+};
+
+// ─── 유틸 함수 ───────────────────────────────────────────────────
 function getTelegramId(): string {
   const tg = (window as Window & { Telegram?: { WebApp?: TelegramWebApp } })
     .Telegram?.WebApp;
@@ -53,23 +68,22 @@ function formatTransactionDate(iso: string): string {
   return `${get('month')}.${get('day')} ${get('hour')}:${get('minute')}`;
 }
 
-type ReferralStats = {
-  referral_code: string;
-  invite_count: number;
-  total_referral_points: number;
-};
-
+// ─── 메인 컴포넌트 ───────────────────────────────────────────────
 export default function ProfilePage() {
   const router = useRouter();
   const { userId, loading: userLoading } = useTelegramUser();
+
   const [points, setPoints] = useState<number | null>(null);
   const [stats, setStats] = useState<ReferralStats | null>(null);
   const [statsLoading, setStatsLoading] = useState(true);
   const [copyToast, setCopyToast] = useState(false);
-  const [navTab] = useState<BottomNavTab>('profile');
   const [pointHistory, setPointHistory] = useState<PointHistoryItem[]>([]);
   const [historyLoading, setHistoryLoading] = useState(true);
 
+  // navTab은 이 페이지에서 절대 변하지 않으므로 상태 불필요
+  const navTab: BottomNavTab = 'profile';
+
+  // ─── 데이터 로드 ─────────────────────────────────────────────
   const loadPoints = useCallback(async () => {
     if (!userId) return;
     const { data } = await supabase
@@ -81,6 +95,7 @@ export default function ProfilePage() {
   }, [userId]);
 
   const loadPointHistory = useCallback(async () => {
+    if (!userId) return; // ← Telegram 환경 외 test_user_001 fallback 방지
     setHistoryLoading(true);
     try {
       const telegramId = getTelegramId();
@@ -88,17 +103,13 @@ export default function ProfilePage() {
         `/api/user/points-history?telegram_id=${encodeURIComponent(telegramId)}`,
       );
       const data = await res.json();
-      if (data.ok && Array.isArray(data.items)) {
-        setPointHistory(data.items);
-      } else {
-        setPointHistory([]);
-      }
+      setPointHistory(data.ok && Array.isArray(data.items) ? data.items : []);
     } catch {
       setPointHistory([]);
     } finally {
       setHistoryLoading(false);
     }
-  }, []);
+  }, [userId]);
 
   const loadStats = useCallback(async () => {
     if (!userId) return;
@@ -108,9 +119,9 @@ export default function ProfilePage() {
       const data = await res.json();
       if (data.ok) {
         setStats({
-          referral_code: data.referral_code,
-          invite_count: data.invite_count,
-          total_referral_points: data.total_referral_points,
+          referral_code:          data.referral_code,
+          invite_count:           data.invite_count,
+          total_referral_points:  data.total_referral_points,
         });
       }
     } finally {
@@ -124,6 +135,7 @@ export default function ProfilePage() {
     loadPointHistory();
   }, [loadPoints, loadStats, loadPointHistory]);
 
+  // ─── 핸들러 ──────────────────────────────────────────────────
   const inviteLink = stats?.referral_code
     ? buildInviteLink(stats.referral_code)
     : '';
@@ -146,11 +158,13 @@ export default function ProfilePage() {
     window.open(shareUrl, '_blank');
   }
 
+  // ─── 렌더 ────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-[#0a0f1e] flex flex-col items-center pt-4 px-4 pb-20">
       <div className="w-full max-w-xl space-y-4">
         <h1 className="text-xl font-bold text-white">내 정보</h1>
 
+        {/* 보유 포인트 */}
         <section className="bg-[#111827] border border-emerald-500/30 rounded-xl px-5 py-4">
           <div className="flex items-center justify-between">
             <span className="text-gray-300 text-sm">💰 보유 포인트</span>
@@ -164,18 +178,15 @@ export default function ProfilePage() {
           </div>
         </section>
 
+        {/* 포인트 내역 */}
         <section className="bg-[#111827] border border-white/10 rounded-xl p-5 space-y-3">
           <h2 className="text-sm font-semibold text-white">포인트 내역</h2>
-
           {historyLoading ? (
             <p className="text-sm text-gray-400">로딩 중...</p>
           ) : pointHistory.length === 0 ? (
             <p className="text-sm text-gray-500">아직 포인트 내역이 없습니다</p>
           ) : (
-            <ul
-              className="space-y-2 overflow-y-auto pr-1"
-              style={{ maxHeight: 300 }}
-            >
+            <ul className="space-y-2 overflow-y-auto pr-1" style={{ maxHeight: 300 }}>
               {pointHistory.map((item, index) => {
                 const amount = item.amount ?? 0;
                 const isGain = amount >= 0;
@@ -209,9 +220,9 @@ export default function ProfilePage() {
           )}
         </section>
 
+        {/* 친구 초대 */}
         <section className="bg-[#111827] border border-white/10 rounded-xl p-5 space-y-4">
           <h2 className="text-sm font-semibold text-white">친구 초대</h2>
-
           {statsLoading ? (
             <p className="text-sm text-gray-400">로딩 중...</p>
           ) : stats ? (
@@ -241,9 +252,7 @@ export default function ProfilePage() {
               </div>
 
               {copyToast ? (
-                <p className="text-center text-sm text-emerald-400 font-medium">
-                  복사됨!
-                </p>
+                <p className="text-center text-sm text-emerald-400 font-medium">복사됨!</p>
               ) : null}
 
               <div className="grid grid-cols-2 gap-3 pt-2 border-t border-white/10">
@@ -287,12 +296,4 @@ export default function ProfilePage() {
       />
     </div>
   );
-}
-
-interface TelegramWebApp {
-  initDataUnsafe?: {
-    user?: {
-      id: number;
-    };
-  };
 }

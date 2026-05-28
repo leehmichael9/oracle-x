@@ -19,10 +19,15 @@ import {
 import { supabase } from '@/lib/supabase';
 import { useTelegramUser } from '@/lib/useTelegramUser';
 
+// ─── 상수 (컴포넌트 외부 — 렌더링마다 재생성 방지) ───────────────
+const GLOBAL_HEADER_HEIGHT = 56;
+const FIXED_TOP_GAP = 16;
+const MIN_CONTENT_TOP_PADDING = 120;
+const NEW_MARKET_MS = 72 * 60 * 60 * 1000;
+
+// ─── 타입 ────────────────────────────────────────────────────────
 type CategoryFilter = '전체' | (typeof MARKET_CATEGORIES)[number];
 type StatusFilter = 'active' | 'resolved';
-
-const NEW_MARKET_MS = 72 * 60 * 60 * 1000;
 
 type Market = {
   id: number;
@@ -38,6 +43,7 @@ type Market = {
   image_url: string | null;
 };
 
+// ─── 유틸 함수 ───────────────────────────────────────────────────
 function isNewMarket(createdAt: string | undefined): boolean {
   if (!createdAt) return false;
   const created = new Date(createdAt).getTime();
@@ -45,10 +51,8 @@ function isNewMarket(createdAt: string | undefined): boolean {
   return Date.now() - created < NEW_MARKET_MS;
 }
 
+// ─── 메인 컴포넌트 ───────────────────────────────────────────────
 export default function Home() {
-  const GLOBAL_HEADER_HEIGHT = 56;
-  const FIXED_TOP_GAP = 16;
-  const MIN_CONTENT_TOP_PADDING = 120;
   const router = useRouter();
   const [markets, setMarkets] = useState<Market[]>([]);
   const [loading, setLoading] = useState(true);
@@ -59,13 +63,16 @@ export default function Home() {
   const [navTab, setNavTab] = useState<BottomNavTab>('home');
   const [localHeaderHeight, setLocalHeaderHeight] = useState(0);
   const [stickyTabsHeight, setStickyTabsHeight] = useState(0);
+
   const localHeaderRef = useRef<HTMLDivElement>(null);
   const stickyTabsRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const categoryTabsRef = useRef<HTMLDivElement>(null);
   const statusTabsRef = useRef<HTMLDivElement>(null);
+
   const { userId, loading: userLoading } = useTelegramUser();
 
+  // ─── 마켓 필터링 ─────────────────────────────────────────────
   const filteredMarkets = useMemo(() => {
     const keyword = searchQuery.trim().toLowerCase();
     return markets.filter((m) => {
@@ -78,6 +85,7 @@ export default function Home() {
     });
   }, [markets, breakingOnly, searchQuery, categoryFilter, statusFilter]);
 
+  // ─── 하단 네비 핸들러 ────────────────────────────────────────
   function handleNavHome() {
     setNavTab('home');
     setBreakingOnly(false);
@@ -101,6 +109,7 @@ export default function Home() {
     router.push('/profile');
   }
 
+  // ─── 마켓 데이터 로드 ────────────────────────────────────────
   useEffect(() => {
     async function load() {
       const { data } = await supabase.from('markets').select('*');
@@ -110,15 +119,11 @@ export default function Home() {
     load();
   }, []);
 
+  // ─── 카테고리 탭 마우스 휠 가로 스크롤 ──────────────────────
   useEffect(() => {
     const el = categoryTabsRef.current;
     if (!el) return;
-
-    const handler = (e: WheelEvent) => {
-      e.preventDefault();
-      el.scrollLeft += e.deltaY;
-    };
-
+    const handler = (e: WheelEvent) => { e.preventDefault(); el.scrollLeft += e.deltaY; };
     el.addEventListener('wheel', handler, { passive: false });
     return () => el.removeEventListener('wheel', handler);
   }, []);
@@ -126,26 +131,22 @@ export default function Home() {
   useEffect(() => {
     const el = statusTabsRef.current;
     if (!el) return;
-
-    const handler = (e: WheelEvent) => {
-      e.preventDefault();
-      el.scrollLeft += e.deltaY;
-    };
-
+    const handler = (e: WheelEvent) => { e.preventDefault(); el.scrollLeft += e.deltaY; };
     el.addEventListener('wheel', handler, { passive: false });
     return () => el.removeEventListener('wheel', handler);
   }, []);
 
+  // ─── 고정 헤더 높이 측정 (콘텐츠 top padding 계산용) ────────
   useEffect(() => {
-    const updateStickyHeaderHeight = () => {
+    const updateHeights = () => {
       setLocalHeaderHeight(localHeaderRef.current?.offsetHeight ?? 0);
       setStickyTabsHeight(stickyTabsRef.current?.offsetHeight ?? 0);
     };
-    const raf = window.requestAnimationFrame(updateStickyHeaderHeight);
-    window.addEventListener('resize', updateStickyHeaderHeight);
+    const raf = window.requestAnimationFrame(updateHeights);
+    window.addEventListener('resize', updateHeights);
     return () => {
       window.cancelAnimationFrame(raf);
-      window.removeEventListener('resize', updateStickyHeaderHeight);
+      window.removeEventListener('resize', updateHeights);
     };
   }, [loading, userLoading]);
 
@@ -154,11 +155,13 @@ export default function Home() {
     MIN_CONTENT_TOP_PADDING,
   );
 
+  // ─── 렌더 ────────────────────────────────────────────────────
   return (
     <div
       className="min-h-screen bg-[#0a0f1e] flex flex-col items-center px-4 pb-20"
       style={{ paddingTop: contentTopPadding }}
     >
+      {/* 검색창 고정 헤더 */}
       <div
         ref={localHeaderRef}
         className="fixed left-0 right-0 z-40 w-full flex flex-col items-center bg-[#0a0f1e] px-4 pt-2 pb-3"
@@ -195,20 +198,22 @@ export default function Home() {
           ) : null}
         </div>
       </div>
+
       {loading || userLoading ? (
         <p className="text-gray-400">로딩 중...</p>
       ) : (
         <div className="flex flex-col gap-4 w-full max-w-xl">
+          {/* 카테고리 · 상태 탭 고정 */}
           <div
             ref={stickyTabsRef}
             className="space-y-2 fixed left-0 right-0 z-30 bg-[#0a0f1e] px-4 py-2 flex justify-center"
             style={{ top: GLOBAL_HEADER_HEIGHT + localHeaderHeight }}
           >
             <div className="w-full max-w-xl space-y-2">
+              {/* 카테고리 탭 */}
               <div
                 ref={categoryTabsRef}
                 className="flex gap-2 overflow-x-auto no-scrollbar"
-                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
               >
                 {(['전체', ...MARKET_CATEGORIES] as CategoryFilter[]).map((cat) => (
                   <button
@@ -224,27 +229,22 @@ export default function Home() {
                         ? 'text-white border-[#34d399]/40'
                         : 'bg-[#111827] text-gray-400 border-white/10 hover:text-white hover:border-white/20'
                     }`}
-                    style={
-                      categoryFilter === cat
-                        ? { backgroundColor: 'rgba(52,211,153,0.2)' }
-                        : undefined
-                    }
+                    style={categoryFilter === cat ? { backgroundColor: 'rgba(52,211,153,0.2)' } : undefined}
                   >
                     {cat}
                   </button>
                 ))}
               </div>
+
+              {/* 진행중 / 종료 탭 */}
               <div
                 ref={statusTabsRef}
                 className="flex gap-2 overflow-x-auto no-scrollbar"
-                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
               >
-                {(
-                  [
-                    { value: 'active' as const, label: '진행중' },
-                    { value: 'resolved' as const, label: '종료' },
-                  ] as const
-                ).map(({ value, label }) => (
+                {([
+                  { value: 'active' as const, label: '진행중' },
+                  { value: 'resolved' as const, label: '종료' },
+                ] as const).map(({ value, label }) => (
                   <button
                     key={value}
                     type="button"
@@ -258,11 +258,7 @@ export default function Home() {
                         ? 'text-white border-[#34d399]/40'
                         : 'bg-[#111827] text-gray-400 border-white/10 hover:text-white hover:border-white/20'
                     }`}
-                    style={
-                      statusFilter === value
-                        ? { backgroundColor: 'rgba(52,211,153,0.2)' }
-                        : undefined
-                    }
+                    style={statusFilter === value ? { backgroundColor: 'rgba(52,211,153,0.2)' } : undefined}
                   >
                     {label}
                   </button>
@@ -271,16 +267,16 @@ export default function Home() {
             </div>
           </div>
 
+          {/* 빈 상태 */}
           {filteredMarkets.length === 0 ? (
             <p className="text-gray-400 text-center py-8">해당 조건의 마켓이 없습니다.</p>
           ) : null}
 
+          {/* 마켓 카드 목록 */}
           {filteredMarkets.map((m) => {
             const showBreaking = Boolean(m.is_breaking);
             const showNew = isNewMarket(m.created_at);
-            const thumbnailSrc =
-              m.image_url?.trim() ||
-              getCategoryImage(normalizeCategory(m.category));
+            const thumbnailSrc = m.image_url?.trim() || getCategoryImage(normalizeCategory(m.category));
 
             return (
               <div
@@ -291,14 +287,16 @@ export default function Home() {
                   href={`/market/${m.id}`}
                   className="flex items-center gap-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#34d399]/40 rounded-lg"
                 >
+                  {/* 썸네일 — 부모 div의 overflow-hidden+rounded-lg가 클리핑 처리 */}
                   <div
                     className="shrink-0 rounded-lg overflow-hidden bg-[#0a0f1e]"
                     style={{ width: 64, height: 64, minWidth: 64 }}
                   >
                     <img
                       src={thumbnailSrc}
-                      style={{ width: 64, height: 64, minWidth: 64, borderRadius: 8, objectFit: 'cover' }}
-                      className="rounded-lg object-cover"
+                      width={64}
+                      height={64}
+                      className="object-cover w-full h-full"
                       alt={m.category}
                     />
                   </div>
@@ -307,6 +305,7 @@ export default function Home() {
                     <p className="text-white text-sm font-medium leading-snug line-clamp-2 text-left">
                       {m.question}
                     </p>
+
                     {(showBreaking || showNew) && (
                       <div className="flex flex-wrap items-center justify-start gap-1.5 mt-1.5">
                         {showBreaking ? (
@@ -335,22 +334,18 @@ export default function Home() {
                         ) : null}
                       </div>
                     )}
+
                     {isMarketEnded(m) && (
                       <div
                         className="text-xs font-bold px-2 py-1 rounded-lg mt-2 inline-block"
                         style={
                           isMarketSettled(m) && m.result
                             ? getSettledResultBadgeStyle(m.result)
-                            : {
-                                background: 'rgba(255,255,255,0.06)',
-                                color: '#9ca3af',
-                              }
+                            : { background: 'rgba(255,255,255,0.06)', color: '#9ca3af' }
                         }
                       >
                         {isMarketSettled(m)
-                          ? m.result === 'YES'
-                            ? '✅ 종료 · YES'
-                            : '❌ 종료 · NO'
+                          ? m.result === 'YES' ? '✅ 종료 · YES' : '❌ 종료 · NO'
                           : '⏱️ 마감 · 베팅 종료'}
                       </div>
                     )}
@@ -358,10 +353,7 @@ export default function Home() {
                 </Link>
 
                 <YesNoButtonGroup className="mt-3">
-                  <YesNoButton
-                    side="YES"
-                    href={`/market/${m.id}?side=yes`}
-                  >
+                  <YesNoButton side="YES" href={`/market/${m.id}?side=yes`}>
                     YES {m.yes_percent}%
                   </YesNoButton>
                   <YesNoButton side="NO" href={`/market/${m.id}?side=no`}>
@@ -381,11 +373,6 @@ export default function Home() {
         onBreaking={handleNavBreaking}
         onProfile={handleNavProfile}
       />
-      <style jsx>{`
-        .no-scrollbar::-webkit-scrollbar {
-          display: none;
-        }
-      `}</style>
     </div>
   );
 }

@@ -2,8 +2,8 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #0a0f1e;
+  --foreground: #ededed;
   --yes-color: #34d399;
   --no-color: #f87171;
   --yes-bg: rgba(52, 211, 153, 0.15);
@@ -13,22 +13,13 @@
   --bet-submit-bg: rgba(52, 211, 153, 0.8);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: 'Inter', 'Noto Sans KR', sans-serif;
+}
+
+/* 스크롤바 숨김 */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }

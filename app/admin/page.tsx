@@ -168,13 +168,13 @@ export default function AdminPage() {
     e.preventDefault();
     setFormError(null);
     setFormSuccess(false);
-
+  
     const trimmedQuestion = question.trim();
     if (!trimmedQuestion) {
       setFormError('질문을 입력해 주세요.');
       return;
     }
-
+  
     const yes = Number(yesPercent);
     const no = Number(noPercent);
     if (!Number.isFinite(yes) || !Number.isFinite(no)) {
@@ -185,17 +185,19 @@ export default function AdminPage() {
       setFormError('YES 비율과 NO 비율의 합계는 100이어야 합니다.');
       return;
     }
-
+  
     if (!endDate.trim()) {
       setFormError('마감일(end_date)을 입력해 주세요.');
       return;
     }
-    const endDateIso = new Date(endDate).toISOString();
-    if (Number.isNaN(new Date(endDate).getTime())) {
+    // ← NaN 체크를 toISOString() 호출보다 반드시 먼저 수행
+    const parsedEndDate = new Date(endDate);
+    if (Number.isNaN(parsedEndDate.getTime())) {
       setFormError('마감일 형식이 올바르지 않습니다.');
       return;
     }
-
+    const endDateIso = parsedEndDate.toISOString();
+  
     setSubmitting(true);
     try {
       const { error } = await supabase.from('markets').insert({
@@ -210,12 +212,12 @@ export default function AdminPage() {
         is_breaking: isBreaking,
         image_url: imageUrl.trim() || null,
       });
-
+  
       if (error) {
         setFormError(error.message ?? '마켓 생성에 실패했습니다.');
         return;
       }
-
+  
       setQuestion('');
       setCategory(MARKET_CATEGORIES[0]);
       setSubCategory('');
@@ -245,22 +247,26 @@ export default function AdminPage() {
         p_market_id: marketId,
         p_result: result,
       });
-
+  
       if (error) {
         setResolveError(error.message ?? '정산 처리에 실패했습니다.');
         return;
       }
-
+      // ← RPC가 에러 없이 null을 반환하는 엣지케이스 방어
+      if (!data) {
+        setResolveError('서버 응답이 없습니다. 다시 시도해주세요.');
+        return;
+      }
       if (!data.success) {
         setResolveError(data.error);
         return;
       }
-
+  
       setSettleMessage(
         `정산 완료! ${data.settled_count}명에게 포인트 지급 (총 풀: ${data.total_pool}P)`,
       );
       setExpandSettleId(null);
-
+  
       const market = markets.find((m) => m.id === marketId);
       if (market) {
         await fetch('/api/notify', {
@@ -281,16 +287,27 @@ export default function AdminPage() {
 
   async function handleDelete(marketId: number) {
     if (!window.confirm('이 마켓을 삭제하시겠습니까?')) return;
-
-    await supabase.from('bets').delete().eq('market_id', marketId);
-
-    const { error } = await supabase.from('markets').delete().eq('id', marketId);
-
-    if (error) {
-      alert('마켓 삭제에 실패했습니다: ' + error.message);
+  
+    const { error: betsError } = await supabase
+      .from('bets')
+      .delete()
+      .eq('market_id', marketId);
+  
+    if (betsError) {
+      setResolveError('베팅 데이터 삭제에 실패했습니다: ' + betsError.message);
       return;
     }
-
+  
+    const { error } = await supabase
+      .from('markets')
+      .delete()
+      .eq('id', marketId);
+  
+    if (error) {
+      setResolveError('마켓 삭제에 실패했습니다: ' + error.message);
+      return;
+    }
+  
     await loadMarkets();
   }
 
