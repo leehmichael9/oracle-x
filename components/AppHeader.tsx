@@ -7,8 +7,8 @@ const iconButtonClass =
   'flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-[#111827] text-lg transition-all hover:border-white/20 hover:bg-[#151d32]';
 
 const SUBTITLES = ["Asia's No.1 Prediction Market", '아시아 최초 예측마켓'];
-const SLIDE_DURATION_MS = 400;
-const ROTATE_INTERVAL_MS = 3000;
+const SLIDE_DURATION_MS = 800;
+const ROTATE_INTERVAL_MS = 5000;
 
 export function AppHeader() {
   const [subtitleIndex, setSubtitleIndex] = useState(0);
@@ -57,7 +57,7 @@ export function AppHeader() {
               className="text-xs text-[#94a3b8] tracking-wider leading-none whitespace-nowrap"
               style={{
                 transform: `translateX(${translateX}%)`,
-                transition: enableTransition ? 'transform 0.4s ease' : 'none',
+                transition: enableTransition ? `transform ${SLIDE_DURATION_MS}ms ease` : 'none',
               }}
             >
               {SUBTITLES[subtitleIndex]}
