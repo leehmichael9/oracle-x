@@ -22,8 +22,20 @@ import { useTelegramUser } from '@/lib/useTelegramUser';
 // ─── 상수 (컴포넌트 외부 — 렌더링마다 재생성 방지) ───────────────
 const GLOBAL_HEADER_HEIGHT = 80;
 const FIXED_TOP_GAP = 16;
-const MIN_CONTENT_TOP_PADDING = 120;
+const MIN_CONTENT_TOP_PADDING = 188;
 const NEW_MARKET_MS = 72 * 60 * 60 * 1000;
+const TRENDING_TAGS: {
+  label: string;
+  category: CategoryFilter;
+}[] = [
+  { label: '🔥 XRP', category: '크립토' },
+  { label: '🇺🇸 FOMC', category: '경제/금융' },
+  { label: '🌏 지정학', category: '지정학' },
+  { label: '⚡ BTC', category: '크립토' },
+  { label: '🇰🇷 한국', category: '한국 증시/경제' },
+  { label: '🤖 AI', category: '테크/AI' },
+  { label: '⚽ 스포츠', category: '스포츠' },
+];
 
 // ─── 타입 ────────────────────────────────────────────────────────
 type CategoryFilter = '전체' | (typeof MARKET_CATEGORIES)[number];
@@ -69,6 +81,7 @@ export default function Home() {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const categoryTabsRef = useRef<HTMLDivElement>(null);
   const statusTabsRef = useRef<HTMLDivElement>(null);
+  const trendingTagsRef = useRef<HTMLDivElement>(null);
 
   const { userId, loading: userLoading } = useTelegramUser();
 
@@ -136,6 +149,14 @@ export default function Home() {
     return () => el.removeEventListener('wheel', handler);
   }, []);
 
+  useEffect(() => {
+    const el = trendingTagsRef.current;
+    if (!el) return;
+    const handler = (e: WheelEvent) => { e.preventDefault(); el.scrollLeft += e.deltaY; };
+    el.addEventListener('wheel', handler, { passive: false });
+    return () => el.removeEventListener('wheel', handler);
+  }, []);
+
   // ─── 고정 헤더 높이 측정 (콘텐츠 top padding 계산용) ────────
   useEffect(() => {
     const updateHeights = () => {
@@ -167,6 +188,30 @@ export default function Home() {
         className="fixed left-0 right-0 z-40 w-full flex flex-col items-center bg-[#0a0f1e] px-4 pt-2 pb-3"
         style={{ top: GLOBAL_HEADER_HEIGHT }}
       >
+        <div
+          ref={categoryTabsRef}
+          className="w-full max-w-xl flex gap-2 overflow-x-auto no-scrollbar mb-2"
+        >
+          {(['전체', ...MARKET_CATEGORIES] as CategoryFilter[]).map((cat) => (
+            <button
+              key={cat}
+              type="button"
+              onClick={() => {
+                setCategoryFilter(cat);
+                setBreakingOnly(false);
+                setNavTab('home');
+              }}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all border whitespace-nowrap shrink-0 ${
+                categoryFilter === cat
+                  ? 'text-white border-[#34d399]/40'
+                  : 'bg-[#111827] text-gray-400 border-white/10 hover:text-white hover:border-white/20'
+              }`}
+              style={categoryFilter === cat ? { backgroundColor: 'rgba(52,211,153,0.2)' } : undefined}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
         <div className="relative w-full max-w-xl">
           <span
             className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
@@ -194,6 +239,26 @@ export default function Home() {
             </button>
           ) : null}
         </div>
+        <div
+          ref={trendingTagsRef}
+          className="w-full max-w-xl mt-2 flex gap-2 overflow-x-auto no-scrollbar"
+        >
+          {TRENDING_TAGS.map((tag) => (
+            <button
+              key={tag.label}
+              type="button"
+              onClick={() => {
+                setCategoryFilter(tag.category);
+                setBreakingOnly(false);
+                setNavTab('home');
+              }}
+              className="shrink-0 whitespace-nowrap px-2.5 py-1 rounded-full text-[12px]"
+              style={{ background: '#1e2a3a', color: '#94a3b8' }}
+            >
+              {tag.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {loading || userLoading ? (
@@ -207,32 +272,6 @@ export default function Home() {
             style={{ top: GLOBAL_HEADER_HEIGHT + localHeaderHeight }}
           >
             <div className="w-full max-w-xl space-y-2">
-              {/* 카테고리 탭 */}
-              <div
-                ref={categoryTabsRef}
-                className="flex gap-2 overflow-x-auto no-scrollbar"
-              >
-                {(['전체', ...MARKET_CATEGORIES] as CategoryFilter[]).map((cat) => (
-                  <button
-                    key={cat}
-                    type="button"
-                    onClick={() => {
-                      setCategoryFilter(cat);
-                      setBreakingOnly(false);
-                      setNavTab('home');
-                    }}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all border whitespace-nowrap shrink-0 ${
-                      categoryFilter === cat
-                        ? 'text-white border-[#34d399]/40'
-                        : 'bg-[#111827] text-gray-400 border-white/10 hover:text-white hover:border-white/20'
-                    }`}
-                    style={categoryFilter === cat ? { backgroundColor: 'rgba(52,211,153,0.2)' } : undefined}
-                  >
-                    {cat}
-                  </button>
-                ))}
-              </div>
-
               {/* 진행중 / 종료 탭 */}
               <div
                 ref={statusTabsRef}
