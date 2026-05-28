@@ -48,7 +48,7 @@ function isNewMarket(createdAt: string | undefined): boolean {
 export default function Home() {
   const GLOBAL_HEADER_HEIGHT = 56;
   const FIXED_TOP_GAP = 16;
-  const MIN_CONTENT_TOP_PADDING = 104;
+  const MIN_CONTENT_TOP_PADDING = 120;
   const router = useRouter();
   const [markets, setMarkets] = useState<Market[]>([]);
   const [loading, setLoading] = useState(true);
@@ -164,6 +164,9 @@ export default function Home() {
         className="fixed left-0 right-0 z-40 w-full flex flex-col items-center bg-[#0a0f1e] px-4 pt-2 pb-3"
         style={{ top: GLOBAL_HEADER_HEIGHT }}
       >
+        <p className="w-full max-w-xl text-xs text-gray-400 mb-2">
+          Asia&apos;s No.1 Prediction Market
+        </p>
         <div className="relative w-full max-w-xl">
           <span
             className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
@@ -196,9 +199,6 @@ export default function Home() {
         <p className="text-gray-400">로딩 중...</p>
       ) : (
         <div className="flex flex-col gap-4 w-full max-w-xl">
-          <p className="text-sm text-gray-400">
-            Asia&apos;s No.1 Prediction Market
-          </p>
           <div
             ref={stickyTabsRef}
             className="space-y-2 fixed left-0 right-0 z-30 bg-[#0a0f1e] px-4 py-2 flex justify-center"
