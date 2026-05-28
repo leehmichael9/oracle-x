@@ -275,12 +275,18 @@ export default function QuizPage() {
 
   return (
     <div className="min-h-screen bg-[#0a0f1e] flex flex-col items-center py-6 px-4 pb-12">
-      <Link
-        href="/"
-        className="self-start max-w-xl w-full mb-4 text-sm text-gray-400 hover:text-white transition-colors"
-      >
-        ← 홈으로
-      </Link>
+      <div className="sticky top-0 z-50 w-full flex justify-center bg-[#0a0f1e] py-2 mb-4">
+        <div className="w-full max-w-xl flex items-center justify-between gap-3">
+          <Link
+            href="/"
+            className="text-sm text-gray-400 hover:text-white transition-colors whitespace-nowrap"
+          >
+            ← 홈으로
+          </Link>
+          <h1 className="text-xl font-bold text-white">🧩 퀴즈</h1>
+          <span className="w-[56px]" aria-hidden />
+        </div>
+      </div>
 
       <div className="w-full max-w-xl space-y-4">
         {error ? (
@@ -301,7 +307,6 @@ export default function QuizPage() {
 
         {!showSpinner && status === 'idle' ? (
           <div className="space-y-4">
-            <h1 className="text-2xl font-bold text-white">🧩 퀴즈</h1>
             <p className="text-gray-300 text-sm">
               오늘{' '}
               <span className="text-white font-semibold tabular-nums">

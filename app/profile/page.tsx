@@ -149,7 +149,11 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-[#0a0f1e] flex flex-col items-center py-4 px-4 pb-20">
-      <AppHeader />
+      <div className="sticky top-0 z-50 w-full flex justify-center bg-[#0a0f1e] py-1">
+        <div className="w-full max-w-xl">
+          <AppHeader />
+        </div>
+      </div>
 
       <div className="w-full max-w-xl space-y-4">
         <h1 className="text-xl font-bold text-white">내 정보</h1>
