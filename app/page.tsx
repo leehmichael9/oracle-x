@@ -185,7 +185,7 @@ export default function Home() {
       {/* 검색창 고정 헤더 */}
       <div
         ref={localHeaderRef}
-        className="fixed left-0 right-0 z-40 w-full flex flex-col items-center bg-[#0a0f1e] px-4 pt-2 pb-3"
+        className="fixed left-0 right-0 z-40 w-full flex flex-col items-center bg-[#0a0f1e] px-4 pb-3"
         style={{ top: GLOBAL_HEADER_HEIGHT }}
       >
         <div
