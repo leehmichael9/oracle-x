@@ -195,8 +195,8 @@ export default function MarketBetPage() {
   );
 
   return (
-    <div className="min-h-screen bg-[#0a0f1e] flex flex-col items-center py-4 px-4">
-      <div className="sticky top-0 z-50 w-full flex justify-center bg-[#0a0f1e] py-2">
+    <div className="min-h-screen bg-[#0a0f1e] flex flex-col items-center pt-20 pb-4 px-4">
+      <div className="fixed top-0 left-0 right-0 z-50 w-full flex justify-center bg-[#0a0f1e] py-2 px-4">
         <div className="w-full max-w-xl flex items-center justify-between gap-3">
           <Link
             href="/"

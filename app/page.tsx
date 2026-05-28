@@ -47,6 +47,7 @@ function isNewMarket(createdAt: string | undefined): boolean {
 }
 
 export default function Home() {
+  const FIXED_TOP_GAP = 16;
   const router = useRouter();
   const [markets, setMarkets] = useState<Market[]>([]);
   const [loading, setLoading] = useState(true);
@@ -56,7 +57,9 @@ export default function Home() {
   const [breakingOnly, setBreakingOnly] = useState(false);
   const [navTab, setNavTab] = useState<BottomNavTab>('home');
   const [stickyHeaderHeight, setStickyHeaderHeight] = useState(0);
+  const [stickyTabsHeight, setStickyTabsHeight] = useState(0);
   const stickyHeaderRef = useRef<HTMLDivElement>(null);
+  const stickyTabsRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const categoryTabsRef = useRef<HTMLDivElement>(null);
   const statusTabsRef = useRef<HTMLDivElement>(null);
@@ -135,6 +138,7 @@ export default function Home() {
   useEffect(() => {
     const updateStickyHeaderHeight = () => {
       setStickyHeaderHeight(stickyHeaderRef.current?.offsetHeight ?? 0);
+      setStickyTabsHeight(stickyTabsRef.current?.offsetHeight ?? 0);
     };
     updateStickyHeaderHeight();
     window.addEventListener('resize', updateStickyHeaderHeight);
@@ -142,10 +146,13 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#0a0f1e] flex flex-col items-center py-4 px-4 pb-20">
+    <div
+      className="min-h-screen bg-[#0a0f1e] flex flex-col items-center px-4 pb-20"
+      style={{ paddingTop: stickyHeaderHeight + stickyTabsHeight + FIXED_TOP_GAP }}
+    >
       <div
         ref={stickyHeaderRef}
-        className="sticky top-0 z-50 w-full flex flex-col items-center bg-[#0a0f1e] pb-3"
+        className="fixed top-0 left-0 right-0 z-50 w-full flex flex-col items-center bg-[#0a0f1e] px-4 pt-4 pb-3"
       >
         <AppHeader />
         <p className="text-gray-400 text-sm mb-4 w-full max-w-xl">
@@ -184,71 +191,74 @@ export default function Home() {
       ) : (
         <div className="flex flex-col gap-4 w-full max-w-xl">
           <div
-            className="space-y-2 sticky z-40 bg-[#0a0f1e] py-2"
+            ref={stickyTabsRef}
+            className="space-y-2 fixed left-0 right-0 z-40 bg-[#0a0f1e] px-4 py-2 flex justify-center"
             style={{ top: stickyHeaderHeight }}
           >
-            <div
-              ref={categoryTabsRef}
-              className="flex gap-2 overflow-x-auto no-scrollbar"
-              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-            >
-              {(['전체', ...MARKET_CATEGORIES] as CategoryFilter[]).map((cat) => (
-                <button
-                  key={cat}
-                  type="button"
-                  onClick={() => {
-                    setCategoryFilter(cat);
-                    setBreakingOnly(false);
-                    setNavTab('home');
-                  }}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all border whitespace-nowrap shrink-0 ${
-                    categoryFilter === cat
-                      ? 'text-white border-[#34d399]/40'
-                      : 'bg-[#111827] text-gray-400 border-white/10 hover:text-white hover:border-white/20'
-                  }`}
-                  style={
-                    categoryFilter === cat
-                      ? { backgroundColor: 'rgba(52,211,153,0.2)' }
-                      : undefined
-                  }
-                >
-                  {cat}
-                </button>
-              ))}
-            </div>
-            <div
-              ref={statusTabsRef}
-              className="flex gap-2 overflow-x-auto no-scrollbar"
-              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-            >
-              {(
-                [
-                  { value: 'active' as const, label: '진행중' },
-                  { value: 'resolved' as const, label: '종료' },
-                ] as const
-              ).map(({ value, label }) => (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => {
-                    setStatusFilter(value);
-                    setBreakingOnly(false);
-                    setNavTab('home');
-                  }}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all border whitespace-nowrap shrink-0 ${
-                    statusFilter === value
-                      ? 'text-white border-[#34d399]/40'
-                      : 'bg-[#111827] text-gray-400 border-white/10 hover:text-white hover:border-white/20'
-                  }`}
-                  style={
-                    statusFilter === value
-                      ? { backgroundColor: 'rgba(52,211,153,0.2)' }
-                      : undefined
-                  }
-                >
-                  {label}
-                </button>
-              ))}
+            <div className="w-full max-w-xl space-y-2">
+              <div
+                ref={categoryTabsRef}
+                className="flex gap-2 overflow-x-auto no-scrollbar"
+                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+              >
+                {(['전체', ...MARKET_CATEGORIES] as CategoryFilter[]).map((cat) => (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => {
+                      setCategoryFilter(cat);
+                      setBreakingOnly(false);
+                      setNavTab('home');
+                    }}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all border whitespace-nowrap shrink-0 ${
+                      categoryFilter === cat
+                        ? 'text-white border-[#34d399]/40'
+                        : 'bg-[#111827] text-gray-400 border-white/10 hover:text-white hover:border-white/20'
+                    }`}
+                    style={
+                      categoryFilter === cat
+                        ? { backgroundColor: 'rgba(52,211,153,0.2)' }
+                        : undefined
+                    }
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+              <div
+                ref={statusTabsRef}
+                className="flex gap-2 overflow-x-auto no-scrollbar"
+                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+              >
+                {(
+                  [
+                    { value: 'active' as const, label: '진행중' },
+                    { value: 'resolved' as const, label: '종료' },
+                  ] as const
+                ).map(({ value, label }) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => {
+                      setStatusFilter(value);
+                      setBreakingOnly(false);
+                      setNavTab('home');
+                    }}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all border whitespace-nowrap shrink-0 ${
+                      statusFilter === value
+                        ? 'text-white border-[#34d399]/40'
+                        : 'bg-[#111827] text-gray-400 border-white/10 hover:text-white hover:border-white/20'
+                    }`}
+                    style={
+                      statusFilter === value
+                        ? { backgroundColor: 'rgba(52,211,153,0.2)' }
+                        : undefined
+                    }
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
