@@ -201,7 +201,7 @@ export default function MarketBetPage() {
   const progressFill = getYesNoProgressFillStyles(market.yes_percent, market.no_percent);
   const marketEnded = isMarketEnded(market);
   const marketSettled = isMarketSettled(market);
-  const topPadding = headerHeight + subHeaderHeight;
+  const topPadding = Math.max(headerHeight + subHeaderHeight, 130);
 
   // ─── 렌더 ────────────────────────────────────────────────────
   return (
