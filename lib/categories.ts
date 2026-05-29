@@ -202,7 +202,7 @@ export function getCategoryStyle(category: string): CategoryStyle {
 }
 
 const CATEGORY_IMAGE_MAP: Record<string, string> = {
-  날씨: '/category/social.svg',
+  날씨: '/category/weather.svg',
   '정치/시사': '/category/politics.svg',
   지정학: '/category/geopolitics.svg',
   크립토: '/category/crypto.svg',
