@@ -23,6 +23,34 @@ import { supabase } from '@/lib/supabase';
 import { useTelegramUser } from '@/lib/useTelegramUser';
 
 const NEW_MARKET_MS = 72 * 60 * 60 * 1000;
+
+const SUB_CATEGORY_TABS = [
+  '전체',
+  '코스피',
+  '2026월드컵',
+  '이란전쟁',
+  '트럼프',
+  '나스닥',
+  'BTS',
+  '지구온난화',
+  '러우전쟁',
+  '미중간선거',
+  '반도체',
+] as const;
+
+type SubCategoryTab = (typeof SUB_CATEGORY_TABS)[number];
+
+function matchesSubCategoryTab(
+  market: { question: string; sub_category?: string | null },
+  keyword: string,
+): boolean {
+  const kw = keyword.toLowerCase();
+  const sub = (market.sub_category ?? '').trim();
+  if (sub) {
+    return sub.toLowerCase().includes(kw);
+  }
+  return market.question.toLowerCase().includes(kw);
+}
 const TRENDING_TAGS: {
   label: string;
   category: Exclude<HomeCategoryTab, '전체' | '최신'>;
@@ -51,6 +79,7 @@ type Market = {
   end_date: string | null;
   is_breaking: boolean | null;
   image_url: string | null;
+  sub_category: string | null;
 };
 
 // ─── 유틸 함수 ───────────────────────────────────────────────────
@@ -67,6 +96,7 @@ export default function Home() {
   const [markets, setMarkets] = useState<Market[]>([]);
   const [loading, setLoading] = useState(true);
   const [categoryFilter, setCategoryFilter] = useState<HomeCategoryTab>('전체');
+  const [subCategoryFilter, setSubCategoryFilter] = useState<SubCategoryTab>('전체');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('active');
   const [searchQuery, setSearchQuery] = useState('');
   const [breakingOnly, setBreakingOnly] = useState(false);
@@ -76,6 +106,7 @@ export default function Home() {
   const fixedHeaderRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const categoryTabsRef = useRef<HTMLDivElement>(null);
+  const subCategoryTabsRef = useRef<HTMLDivElement>(null);
   const statusTabsRef = useRef<HTMLDivElement>(null);
   const trendingTagsRef = useRef<HTMLDivElement>(null);
 
@@ -94,6 +125,12 @@ export default function Home() {
       ) {
         return false;
       }
+      if (
+        subCategoryFilter !== '전체' &&
+        !matchesSubCategoryTab(m, subCategoryFilter)
+      ) {
+        return false;
+      }
       if (statusFilter === 'active' && !isMarketActiveForFilter(m)) return false;
       if (statusFilter === 'resolved' && !isMarketClosedForFilter(m)) return false;
       return true;
@@ -107,7 +144,7 @@ export default function Home() {
     }
 
     return list;
-  }, [markets, breakingOnly, searchQuery, categoryFilter, statusFilter]);
+  }, [markets, breakingOnly, searchQuery, categoryFilter, subCategoryFilter, statusFilter]);
 
   // ─── 하단 네비 핸들러 ────────────────────────────────────────
   function handleNavHome() {
@@ -146,6 +183,14 @@ export default function Home() {
   // ─── 카테고리 탭 마우스 휠 가로 스크롤 ──────────────────────
   useEffect(() => {
     const el = categoryTabsRef.current;
+    if (!el) return;
+    const handler = (e: WheelEvent) => { e.preventDefault(); el.scrollLeft += e.deltaY; };
+    el.addEventListener('wheel', handler, { passive: false });
+    return () => el.removeEventListener('wheel', handler);
+  }, []);
+
+  useEffect(() => {
+    const el = subCategoryTabsRef.current;
     if (!el) return;
     const handler = (e: WheelEvent) => { e.preventDefault(); el.scrollLeft += e.deltaY; };
     el.addEventListener('wheel', handler, { passive: false });
@@ -217,6 +262,34 @@ export default function Home() {
       </div>
 
       <div className="w-full max-w-xl" style={{ paddingTop: fixedHeaderHeight }}>
+        <div
+          ref={subCategoryTabsRef}
+          className="w-full flex gap-2 overflow-x-auto no-scrollbar mt-2"
+        >
+          {SUB_CATEGORY_TABS.map((tab) => (
+            <button
+              key={tab}
+              type="button"
+              onClick={() => {
+                setSubCategoryFilter(tab);
+                setBreakingOnly(false);
+                setNavTab('home');
+              }}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all border whitespace-nowrap shrink-0 ${
+                subCategoryFilter === tab
+                  ? 'text-white border-[#34d399]/40'
+                  : 'bg-[#111827] text-gray-400 border-white/10 hover:text-white hover:border-white/20'
+              }`}
+              style={
+                subCategoryFilter === tab
+                  ? { backgroundColor: 'rgba(52,211,153,0.2)' }
+                  : undefined
+              }
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
         <div className="relative w-full mt-2">
           <span
             className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
