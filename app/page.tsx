@@ -2,6 +2,7 @@
 import { AppFooter } from '@/components/AppFooter';
 import { AppHeader } from '@/components/AppHeader';
 import { MarketTags } from '@/components/MarketTags';
+import { getDisplayTags } from '@/lib/market-tags';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -373,6 +374,7 @@ export default function Home() {
           {filteredMarkets.map((m) => {
             const showBreaking = Boolean(m.is_breaking);
             const showNew = isNewMarket(m.created_at);
+            const marketTags = getDisplayTags(m.tags);
             const thumbnailSrc = m.image_url?.trim() || getCategoryImage(normalizeCategory(m.category));
 
             return (
@@ -403,7 +405,7 @@ export default function Home() {
                       {m.question}
                     </p>
 
-                    {(showBreaking || showNew) && (
+                    {(showBreaking || showNew || marketTags.length > 0) && (
                       <div className="flex flex-wrap items-center justify-start gap-1.5 mt-1.5">
                         {showBreaking ? (
                           <span
@@ -429,6 +431,7 @@ export default function Home() {
                             🆕 신규
                           </span>
                         ) : null}
+                        <MarketTags tags={m.tags} />
                       </div>
                     )}
 
@@ -457,8 +460,6 @@ export default function Home() {
                     NO {m.no_percent}%
                   </YesNoButton>
                 </YesNoButtonGroup>
-
-                <MarketTags tags={m.tags} className="mt-3" />
               </div>
             );
           })}
