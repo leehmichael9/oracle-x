@@ -1,6 +1,8 @@
-import type { Metadata } from "next";
-import "./globals.css";
+import type { Metadata } from 'next';
+import './globals.css';
 import Script from 'next/script';
+import { Suspense } from 'react';
+import TopLoadingBar from '@/components/TopLoadingBar';
 
 export const metadata: Metadata = {
   title: "Oracle-X | 아시아 No.1 예측마켓",
@@ -19,9 +21,12 @@ export default function RootLayout({
           src="https://telegram.org/js/telegram-web-app.js"
           strategy="beforeInteractive"
         />
-        <main className="min-h-screen">
-          {children}
-        </main>
+          <Suspense fallback={null}>
+        <TopLoadingBar />
+      </Suspense>
+      <main className="min-h-screen">
+        {children}
+      </main>
       </body>
     </html>
   );
