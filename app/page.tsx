@@ -154,13 +154,6 @@ export default function Home() {
       return true;
     });
 
-    if (categoryFilter === '최신') {
-      return [...list].sort(
-        (a, b) =>
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-      );
-    }
-
     return list;
   }, [markets, breakingOnly, searchQuery, categoryFilter, subCategoryFilter, statusFilter]);
 
@@ -191,7 +184,10 @@ export default function Home() {
   // ─── 마켓 데이터 로드 ────────────────────────────────────────
   useEffect(() => {
     async function load() {
-      const { data } = await supabase.from('markets').select('*');
+      const { data } = await supabase
+        .from('markets')
+        .select('*')
+        .order('created_at', { ascending: false });
       setMarkets(data ?? []);
       setLoading(false);
     }
