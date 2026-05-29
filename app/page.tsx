@@ -110,7 +110,6 @@ export default function Home() {
   const fixedHeaderRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const categoryTabsRef = useRef<HTMLDivElement>(null);
-  const subCategoryTabsRef = useRef<HTMLDivElement>(null);
   const statusTabsRef = useRef<HTMLDivElement>(null);
   const trendingTagsRef = useRef<HTMLDivElement>(null);
 
@@ -194,14 +193,6 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    const el = subCategoryTabsRef.current;
-    if (!el) return;
-    const handler = (e: WheelEvent) => { e.preventDefault(); el.scrollLeft += e.deltaY; };
-    el.addEventListener('wheel', handler, { passive: false });
-    return () => el.removeEventListener('wheel', handler);
-  }, []);
-
-  useEffect(() => {
     const el = statusTabsRef.current;
     if (!el) return;
     const handler = (e: WheelEvent) => { e.preventDefault(); el.scrollLeft += e.deltaY; };
@@ -266,34 +257,6 @@ export default function Home() {
       </div>
 
       <div className="w-full max-w-xl" style={{ paddingTop: fixedHeaderHeight }}>
-        <div
-          ref={subCategoryTabsRef}
-          className="w-full flex gap-2 overflow-x-auto no-scrollbar mt-2"
-        >
-          {SUB_CATEGORY_TABS.map((tab) => (
-            <button
-              key={tab}
-              type="button"
-              onClick={() => {
-                setSubCategoryFilter(tab);
-                setBreakingOnly(false);
-                setNavTab('home');
-              }}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all border whitespace-nowrap shrink-0 ${
-                subCategoryFilter === tab
-                  ? 'text-white border-[#34d399]/40'
-                  : 'bg-[#111827] text-gray-400 border-white/10 hover:text-white hover:border-white/20'
-              }`}
-              style={
-                subCategoryFilter === tab
-                  ? { backgroundColor: 'rgba(52,211,153,0.2)' }
-                  : undefined
-              }
-            >
-              {tab}
-            </button>
-          ))}
-        </div>
         <div className="relative w-full mt-2">
           <span
             className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
