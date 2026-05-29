@@ -51,6 +51,10 @@ function matchesSubCategoryTab(
   }
   return market.question.toLowerCase().includes(kw);
 }
+const TRENDING_KEYWORD_TAGS = SUB_CATEGORY_TABS.filter(
+  (tab): tab is Exclude<SubCategoryTab, '전체'> => tab !== '전체',
+);
+
 const TRENDING_TAGS: {
   label: string;
   category: Exclude<HomeCategoryTab, '전체' | '최신'>;
@@ -321,6 +325,21 @@ export default function Home() {
           ref={trendingTagsRef}
           className="w-full mt-2 flex gap-2 overflow-x-auto no-scrollbar"
         >
+          {TRENDING_KEYWORD_TAGS.map((keyword) => (
+            <button
+              key={keyword}
+              type="button"
+              onClick={() => {
+                setSubCategoryFilter(keyword);
+                setBreakingOnly(false);
+                setNavTab('home');
+              }}
+              className="shrink-0 whitespace-nowrap px-2.5 py-1 rounded-full text-[12px]"
+              style={{ background: '#1e2a3a', color: '#94a3b8' }}
+            >
+              {keyword}
+            </button>
+          ))}
           {TRENDING_TAGS.map((tag) => (
             <button
               key={tag.label}
