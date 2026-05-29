@@ -278,9 +278,7 @@ export default function Home() {
       </div>
 
       <div className="w-full max-w-xl" style={{ paddingTop: headerHeight }}>
-      {loading || userLoading ? (
-        <p className="text-gray-400">로딩 중...</p>
-      ) : (
+      {loading || userLoading ? null : (
         <div className="flex flex-col gap-4 w-full">
           {/* 빈 상태 */}
           {filteredMarkets.length === 0 ? (
