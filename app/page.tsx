@@ -55,7 +55,7 @@ const TRENDING_KEYWORD_TAGS: {
   { label: '🗳️ 미중간선거', keyword: '미중간선거' },
   { label: '💾 반도체', keyword: '반도체' },
   { label: '🔥 XRP', keyword: 'XRP' },
-  { label: '⚡ BTC', keyword: 'BTC' },
+  { label: '⚡ BTC', keyword: '비트코인' },
 ];
 
 const TRENDING_TAGS: {
