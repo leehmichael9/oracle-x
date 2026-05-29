@@ -17,6 +17,7 @@ import {
 } from '@/lib/categories';
 import {
   isMarketActiveForFilter,
+  isMarketBreakingActive,
   isMarketClosedForFilter,
   isMarketEnded,
   isMarketSettled,
@@ -96,6 +97,7 @@ type Market = {
   created_at: string;
   end_date: string | null;
   is_breaking: boolean | null;
+  breaking_until: string | null;
   image_url: string | null;
   sub_category: string | null;
   tags: string[] | null;
@@ -134,7 +136,7 @@ export default function Home() {
   const filteredMarkets = useMemo(() => {
     const keyword = searchQuery.trim().toLowerCase();
     const list = markets.filter((m) => {
-      if (breakingOnly && !m.is_breaking) return false;
+      if (breakingOnly && !isMarketBreakingActive(m.breaking_until)) return false;
       if (keyword && !m.question.toLowerCase().includes(keyword)) return false;
       if (
         categoryFilter !== '전체' &&
@@ -368,7 +370,7 @@ export default function Home() {
 
           {/* 마켓 카드 목록 */}
           {filteredMarkets.map((m) => {
-            const showBreaking = Boolean(m.is_breaking);
+            const showBreaking = isMarketBreakingActive(m.breaking_until);
             const showNew = isNewMarket(m.created_at);
             const marketTags = getDisplayTags(m.tags);
             const thumbnailSrc = m.image_url?.trim() || getCategoryImage(normalizeCategory(m.category));

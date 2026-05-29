@@ -11,6 +11,7 @@ type CreateMarketBody = {
   no_percent?: number;
   end_date?: string;
   is_breaking?: boolean;
+  breaking_until?: string | null;
   image_url?: string | null;
   tags?: string[] | null;
 };
@@ -59,6 +60,12 @@ export async function POST(request: NextRequest) {
         ? body.tags.map((t) => String(t).trim()).filter(Boolean)
         : null;
 
+    const isBreaking = Boolean(body.is_breaking);
+    const breakingUntil = isBreaking
+      ? body.breaking_until ??
+        new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+      : null;
+
     const supabase = createSupabaseAdmin();
     const { data, error } = await supabase
       .from('markets')
@@ -71,7 +78,8 @@ export async function POST(request: NextRequest) {
         status: 'active',
         result: null,
         end_date: parsedEndDate.toISOString(),
-        is_breaking: Boolean(body.is_breaking),
+        is_breaking: isBreaking,
+        breaking_until: breakingUntil,
         image_url: body.image_url?.trim() || null,
         tags,
       })

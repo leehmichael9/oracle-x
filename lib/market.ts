@@ -15,6 +15,16 @@ export function isMarketSettled(market: { status: string }): boolean {
   return market.status === 'resolved';
 }
 
+/** breaking_until이 현재 시각보다 미래이면 속보 활성 */
+export function isMarketBreakingActive(
+  breakingUntil: string | null | undefined,
+): boolean {
+  if (!breakingUntil) return false;
+  const until = new Date(breakingUntil).getTime();
+  if (Number.isNaN(until)) return false;
+  return until > Date.now();
+}
+
 /** 정산 완료 또는 마감일 경과 */
 export function isMarketEnded(market: MarketEndFields): boolean {
   return isMarketSettled(market) || isMarketExpiredByEndDate(market.end_date);

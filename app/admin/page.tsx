@@ -4,7 +4,11 @@ import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppHeader } from '@/components/AppHeader';
 import { MARKET_CATEGORIES, normalizeCategory } from '@/lib/categories';
-import { isMarketExpiredByEndDate, toDatetimeLocalValue } from '@/lib/market';
+import {
+  isMarketBreakingActive,
+  isMarketExpiredByEndDate,
+  toDatetimeLocalValue,
+} from '@/lib/market';
 import { parseTagsInput } from '@/lib/market-tags';
 import { supabase } from '@/lib/supabase';
 
@@ -26,9 +30,12 @@ type Market = {
   result: string | null;
   end_date: string | null;
   is_breaking: boolean;
+  breaking_until: string | null;
   image_url: string | null;
   tags: string[] | null;
 };
+
+const BREAKING_DURATION_MS = 24 * 60 * 60 * 1000;
 
 type AdminDisplayStatus = 'active' | 'ended' | 'settled';
 type StatusFilter = 'all' | AdminDisplayStatus;
@@ -118,6 +125,7 @@ export default function AdminPage() {
   const [editingImageUrlId, setEditingImageUrlId] = useState<number | null>(null);
   const [editImageUrl, setEditImageUrl] = useState('');
   const [savingImageUrlId, setSavingImageUrlId] = useState<number | null>(null);
+  const [savingBreakingId, setSavingBreakingId] = useState<number | null>(null);
   const [imageUrlEditError, setImageUrlEditError] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [formSuccess, setFormSuccess] = useState(false);
@@ -260,6 +268,9 @@ export default function AdminPage() {
     const endDateIso = parsedEndDate.toISOString();
   
     const tags = parseTagsInput(tagsInput);
+    const breakingUntil = isBreaking
+      ? new Date(Date.now() + BREAKING_DURATION_MS).toISOString()
+      : null;
 
     setSubmitting(true);
     try {
@@ -274,6 +285,7 @@ export default function AdminPage() {
           no_percent: no,
           end_date: endDateIso,
           is_breaking: isBreaking,
+          breaking_until: breakingUntil,
           image_url: imageUrl.trim() || null,
           tags: tags.length > 0 ? tags : null,
         }),
@@ -304,6 +316,45 @@ export default function AdminPage() {
       await loadMarkets();
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function handleSetBreaking(marketId: number) {
+    setSavingBreakingId(marketId);
+    setResolveError(null);
+    try {
+      const breakingUntil = new Date(Date.now() + BREAKING_DURATION_MS).toISOString();
+      const { error } = await supabase
+        .from('markets')
+        .update({ breaking_until: breakingUntil, is_breaking: true })
+        .eq('id', marketId);
+
+      if (error) {
+        setResolveError('속보 지정에 실패했습니다: ' + error.message);
+        return;
+      }
+      await loadMarkets();
+    } finally {
+      setSavingBreakingId(null);
+    }
+  }
+
+  async function handleClearBreaking(marketId: number) {
+    setSavingBreakingId(marketId);
+    setResolveError(null);
+    try {
+      const { error } = await supabase
+        .from('markets')
+        .update({ breaking_until: null, is_breaking: false })
+        .eq('id', marketId);
+
+      if (error) {
+        setResolveError('속보 해제에 실패했습니다: ' + error.message);
+        return;
+      }
+      await loadMarkets();
+    } finally {
+      setSavingBreakingId(null);
     }
   }
 
@@ -1053,7 +1104,7 @@ export default function AdminPage() {
                         {formatAdminEndDate(m.end_date)}
                       </td>
                       <td className={`${tdClass} text-center`}>
-                        {m.is_breaking ? (
+                        {isMarketBreakingActive(m.breaking_until) ? (
                           <span title="속보">🔥</span>
                         ) : (
                           <span className="text-gray-600">—</span>
@@ -1143,6 +1194,25 @@ export default function AdminPage() {
                             >
                               마감일수정
                             </button>
+                            {isMarketBreakingActive(m.breaking_until) ? (
+                              <button
+                                type="button"
+                                disabled={savingBreakingId === m.id}
+                                onClick={() => handleClearBreaking(m.id)}
+                                className="px-2 py-1 rounded text-xs font-medium border border-amber-900/50 text-amber-400 hover:bg-amber-950/40 disabled:opacity-50"
+                              >
+                                속보 해제
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                disabled={savingBreakingId === m.id}
+                                onClick={() => handleSetBreaking(m.id)}
+                                className="px-2 py-1 rounded text-xs font-medium border border-amber-900/50 text-amber-300 hover:bg-amber-950/40 disabled:opacity-50"
+                              >
+                                속보 지정
+                              </button>
+                            )}
                             <button
                               type="button"
                               onClick={() => handleDelete(m.id)}
