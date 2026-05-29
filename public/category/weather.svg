@@ -1,21 +1,24 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
   <rect width="200" height="200" rx="20" fill="#1a2a3a"/>
-  <g transform="translate(60, 60) scale(2.5)">
-    <circle cx="32" cy="34" r="13" fill="#facc15"/>
-    <line x1="32" y1="16" x2="32" y2="12" stroke="#facc15" stroke-width="2.5" stroke-linecap="round"/>
-    <line x1="32" y1="52" x2="32" y2="56" stroke="#facc15" stroke-width="2.5" stroke-linecap="round"/>
-    <line x1="14" y1="34" x2="10" y2="34" stroke="#facc15" stroke-width="2.5" stroke-linecap="round"/>
-    <line x1="50" y1="34" x2="54" y2="34" stroke="#facc15" stroke-width="2.5" stroke-linecap="round"/>
-    <line x1="19" y1="19" x2="16" y2="16" stroke="#facc15" stroke-width="2.5" stroke-linecap="round"/>
-    <line x1="45" y1="49" x2="48" y2="52" stroke="#facc15" stroke-width="2.5" stroke-linecap="round"/>
-    <line x1="45" y1="19" x2="48" y2="16" stroke="#facc15" stroke-width="2.5" stroke-linecap="round"/>
-    <line x1="19" y1="49" x2="16" y2="52" stroke="#facc15" stroke-width="2.5" stroke-linecap="round"/>
-    <ellipse cx="46" cy="46" rx="16" ry="11" fill="#7dd3fc"/>
-    <ellipse cx="58" cy="43" rx="12" ry="9" fill="#7dd3fc"/>
-    <ellipse cx="36" cy="49" rx="11" ry="8" fill="#7dd3fc"/>
-    <rect x="26" y="49" width="42" height="10" rx="5" fill="#7dd3fc"/>
-    <line x1="36" y1="62" x2="33" y2="70" stroke="#38bdf8" stroke-width="2" stroke-linecap="round"/>
-    <line x1="47" y1="62" x2="44" y2="70" stroke="#38bdf8" stroke-width="2" stroke-linecap="round"/>
-    <line x1="58" y1="62" x2="55" y2="70" stroke="#38bdf8" stroke-width="2" stroke-linecap="round"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <!-- 태양 -->
+    <circle cx="80" cy="75" r="28" fill="#facc15"/>
+    <line x1="80" y1="32" x2="80" y2="20" stroke="#facc15" stroke-width="6"/>
+    <line x1="80" y1="118" x2="80" y2="130" stroke="#facc15" stroke-width="6"/>
+    <line x1="37" y1="75" x2="25" y2="75" stroke="#facc15" stroke-width="6"/>
+    <line x1="123" y1="75" x2="135" y2="75" stroke="#facc15" stroke-width="6"/>
+    <line x1="49" y1="44" x2="41" y2="36" stroke="#facc15" stroke-width="6"/>
+    <line x1="111" y1="106" x2="119" y2="114" stroke="#facc15" stroke-width="6"/>
+    <line x1="111" y1="44" x2="119" y2="36" stroke="#facc15" stroke-width="6"/>
+    <line x1="49" y1="106" x2="41" y2="114" stroke="#facc15" stroke-width="6"/>
+    <!-- 구름 -->
+    <ellipse cx="120" cy="115" rx="38" ry="26" fill="#7dd3fc"/>
+    <ellipse cx="150" cy="108" rx="28" ry="20" fill="#7dd3fc"/>
+    <ellipse cx="95" cy="120" rx="26" ry="19" fill="#7dd3fc"/>
+    <rect x="70" y="118" width="100" height="24" rx="12" fill="#7dd3fc"/>
+    <!-- 빗방울 -->
+    <line x1="90" y1="150" x2="82" y2="172" stroke="#38bdf8" stroke-width="5"/>
+    <line x1="118" y1="150" x2="110" y2="172" stroke="#38bdf8" stroke-width="5"/>
+    <line x1="146" y1="150" x2="138" y2="172" stroke="#38bdf8" stroke-width="5"/>
   </g>
 </svg>
