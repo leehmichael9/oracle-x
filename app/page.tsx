@@ -71,9 +71,9 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState('');
   const [breakingOnly, setBreakingOnly] = useState(false);
   const [navTab, setNavTab] = useState<BottomNavTab>('home');
-  const [headerHeight, setHeaderHeight] = useState(0);
+  const [fixedHeaderHeight, setFixedHeaderHeight] = useState(0);
 
-  const headerRef = useRef<HTMLDivElement>(null);
+  const fixedHeaderRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const categoryTabsRef = useRef<HTMLDivElement>(null);
   const statusTabsRef = useRef<HTMLDivElement>(null);
@@ -153,11 +153,11 @@ export default function Home() {
     return () => el.removeEventListener('wheel', handler);
   }, []);
 
-  // ─── 고정 헤더 높이 실측 (콘텐츠 top padding 계산용) ────────
+  // ─── 고정 헤더 높이 실측 (AppHeader + 대카테고리 탭만) ───────
   useEffect(() => {
     const update = () => {
-      if (headerRef.current) {
-        setHeaderHeight(headerRef.current.offsetHeight);
+      if (fixedHeaderRef.current) {
+        setFixedHeaderHeight(fixedHeaderRef.current.offsetHeight);
       }
     };
     update();
@@ -171,7 +171,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-[#0a0f1e] flex flex-col items-center px-4 pb-20">
       <div
-        ref={headerRef}
+        ref={fixedHeaderRef}
         className="fixed top-0 left-0 right-0 z-50 w-full flex flex-col items-center bg-[#0a0f1e] px-4 py-2"
       >
         <AppHeader />
@@ -199,7 +199,10 @@ export default function Home() {
             </button>
           ))}
         </div>
-        <div className="relative w-full max-w-xl mt-2">
+      </div>
+
+      <div className="w-full max-w-xl" style={{ paddingTop: fixedHeaderHeight }}>
+        <div className="relative w-full mt-2">
           <span
             className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
             aria-hidden
@@ -228,7 +231,7 @@ export default function Home() {
         </div>
         <div
           ref={trendingTagsRef}
-          className="w-full max-w-xl mt-2 flex gap-2 overflow-x-auto no-scrollbar"
+          className="w-full mt-2 flex gap-2 overflow-x-auto no-scrollbar"
         >
           {TRENDING_TAGS.map((tag) => (
             <button
@@ -246,7 +249,7 @@ export default function Home() {
             </button>
           ))}
         </div>
-        <div className="w-full max-w-xl mt-2">
+        <div className="w-full mt-2 mb-3 relative z-0">
           <div
             ref={statusTabsRef}
             className="flex gap-2 overflow-x-auto no-scrollbar"
@@ -275,9 +278,6 @@ export default function Home() {
             ))}
           </div>
         </div>
-      </div>
-
-      <div className="w-full max-w-xl" style={{ paddingTop: headerHeight }}>
       {loading || userLoading ? null : (
         <div className="flex flex-col gap-4 w-full">
           {/* 빈 상태 */}
