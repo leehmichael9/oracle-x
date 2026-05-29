@@ -114,9 +114,7 @@ export default function LeaderboardPage() {
           <span className="text-right">보유 포인트</span>
         </div>
 
-        {loading ? (
-          <p className="text-gray-400 text-center py-10">로딩 중...</p>
-        ) : users.length === 0 ? (
+        {loading ? null : users.length === 0 ? (
           <p className="text-gray-400 text-center py-10">등록된 사용자가 없습니다.</p>
         ) : (
           <ul>

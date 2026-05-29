@@ -176,11 +176,7 @@ export default function MarketBetPage() {
 
   // ─── 로딩 / 에러 상태 ────────────────────────────────────────
   if (marketLoading) {
-    return (
-      <div className="min-h-screen bg-[#0a0f1e] flex flex-col items-center justify-center px-4">
-        <p className="text-gray-400">로딩 중...</p>
-      </div>
-    );
+    return <div className="min-h-screen bg-[#0a0f1e]" />;
   }
 
   if (!market) {

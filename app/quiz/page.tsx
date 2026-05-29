@@ -320,16 +320,6 @@ export default function QuizPage() {
           </p>
         ) : null}
 
-        {showSpinner ? (
-          <div className="flex flex-col items-center justify-center py-24 gap-3">
-            <div
-              className="w-10 h-10 rounded-full border-2 border-white/20 border-t-[#34d399] animate-spin"
-              aria-hidden
-            />
-            <p className="text-gray-400 text-sm">로딩 중...</p>
-          </div>
-        ) : null}
-
         {!showSpinner && status === 'idle' ? (
           <div className="space-y-4">
             <p className="text-gray-300 text-sm">

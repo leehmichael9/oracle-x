@@ -186,9 +186,7 @@ export default function ProfilePage() {
         <section className="bg-[#111827] border border-emerald-500/30 rounded-xl px-5 py-4">
           <div className="flex items-center justify-between">
             <span className="text-gray-300 text-sm">💰 보유 포인트</span>
-            {userLoading || points === null ? (
-              <span className="text-gray-500 text-sm">로딩 중...</span>
-            ) : (
+            {userLoading || points === null ? null : (
               <span className="text-emerald-400 font-bold text-lg tabular-nums">
                 {(points ?? 0).toLocaleString()} P
               </span>
@@ -199,9 +197,7 @@ export default function ProfilePage() {
         {/* 포인트 내역 */}
         <section className="bg-[#111827] border border-white/10 rounded-xl p-5 space-y-3">
           <h2 className="text-sm font-semibold text-white">포인트 내역</h2>
-          {historyLoading ? (
-            <p className="text-sm text-gray-400">로딩 중...</p>
-          ) : pointHistory.length === 0 ? (
+          {historyLoading ? null : pointHistory.length === 0 ? (
             <p className="text-sm text-gray-500">아직 포인트 내역이 없습니다</p>
           ) : (
             <ul className="space-y-2 overflow-y-auto pr-1" style={{ maxHeight: 300 }}>
@@ -241,9 +237,7 @@ export default function ProfilePage() {
         {/* 친구 초대 */}
         <section className="bg-[#111827] border border-white/10 rounded-xl p-5 space-y-4">
           <h2 className="text-sm font-semibold text-white">친구 초대</h2>
-          {statsLoading ? (
-            <p className="text-sm text-gray-400">로딩 중...</p>
-          ) : stats ? (
+          {statsLoading ? null : stats ? (
             <>
               <div>
                 <p className="text-xs text-gray-500 mb-1">내 초대 링크</p>
