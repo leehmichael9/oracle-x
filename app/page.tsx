@@ -9,8 +9,9 @@ import { YesNoButton, YesNoButtonGroup } from '@/components/YesNoButton';
 import {
   getCategoryImage,
   getSettledResultBadgeStyle,
-  MARKET_CATEGORIES,
+  HOME_CATEGORY_TABS,
   normalizeCategory,
+  type HomeCategoryTab,
 } from '@/lib/categories';
 import {
   isMarketActiveForFilter,
@@ -24,7 +25,7 @@ import { useTelegramUser } from '@/lib/useTelegramUser';
 const NEW_MARKET_MS = 72 * 60 * 60 * 1000;
 const TRENDING_TAGS: {
   label: string;
-  category: CategoryFilter;
+  category: Exclude<HomeCategoryTab, '전체' | '최신'>;
 }[] = [
   { label: '🔥 XRP', category: '크립토' },
   { label: '🇺🇸 FOMC', category: '경제/금융' },
@@ -36,7 +37,6 @@ const TRENDING_TAGS: {
 ];
 
 // ─── 타입 ────────────────────────────────────────────────────────
-type CategoryFilter = '전체' | (typeof MARKET_CATEGORIES)[number];
 type StatusFilter = 'active' | 'resolved';
 
 type Market = {
@@ -66,7 +66,7 @@ export default function Home() {
   const router = useRouter();
   const [markets, setMarkets] = useState<Market[]>([]);
   const [loading, setLoading] = useState(true);
-  const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('전체');
+  const [categoryFilter, setCategoryFilter] = useState<HomeCategoryTab>('전체');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('active');
   const [searchQuery, setSearchQuery] = useState('');
   const [breakingOnly, setBreakingOnly] = useState(false);
@@ -84,14 +84,29 @@ export default function Home() {
   // ─── 마켓 필터링 ─────────────────────────────────────────────
   const filteredMarkets = useMemo(() => {
     const keyword = searchQuery.trim().toLowerCase();
-    return markets.filter((m) => {
+    const list = markets.filter((m) => {
       if (breakingOnly && !m.is_breaking) return false;
       if (keyword && !m.question.toLowerCase().includes(keyword)) return false;
-      if (categoryFilter !== '전체' && m.category !== categoryFilter) return false;
+      if (
+        categoryFilter !== '전체' &&
+        categoryFilter !== '최신' &&
+        normalizeCategory(m.category) !== categoryFilter
+      ) {
+        return false;
+      }
       if (statusFilter === 'active' && !isMarketActiveForFilter(m)) return false;
       if (statusFilter === 'resolved' && !isMarketClosedForFilter(m)) return false;
       return true;
     });
+
+    if (categoryFilter === '최신') {
+      return [...list].sort(
+        (a, b) =>
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+      );
+    }
+
+    return list;
   }, [markets, breakingOnly, searchQuery, categoryFilter, statusFilter]);
 
   // ─── 하단 네비 핸들러 ────────────────────────────────────────
@@ -179,7 +194,7 @@ export default function Home() {
           ref={categoryTabsRef}
           className="w-full max-w-xl flex gap-2 overflow-x-auto no-scrollbar"
         >
-          {(['전체', ...MARKET_CATEGORIES] as CategoryFilter[]).map((cat) => (
+          {HOME_CATEGORY_TABS.map((cat) => (
             <button
               key={cat}
               type="button"

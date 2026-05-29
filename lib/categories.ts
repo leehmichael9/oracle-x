@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'react';
 
 export const MARKET_CATEGORIES = [
+  '날씨',
   '정치/시사',
   '지정학',
   '크립토',
@@ -12,6 +13,10 @@ export const MARKET_CATEGORIES = [
   '한국 증시/경제',
   '사회/이슈',
 ] as const;
+
+/** 메인 페이지 대카테고리 탭 (전체·최신 + DB 카테고리) */
+export const HOME_CATEGORY_TABS = ['전체', '최신', ...MARKET_CATEGORIES] as const;
+export type HomeCategoryTab = (typeof HOME_CATEGORY_TABS)[number];
 
 export type MarketCategory = (typeof MARKET_CATEGORIES)[number];
 
@@ -43,6 +48,8 @@ const CATEGORY_ALIAS_MAP: Record<string, string> = {
   '한국 증시/경제': '한국 증시/경제',
   social: '사회/이슈',
   '사회/이슈': '사회/이슈',
+  weather: '날씨',
+  날씨: '날씨',
   크립토산업: '크립토산업',
 };
 
@@ -136,6 +143,10 @@ export type CategoryStyle = {
 };
 
 export const CATEGORY_STYLES: Record<MarketCategory, CategoryStyle> = {
+  날씨: {
+    emoji: '🌤️',
+    gradient: 'linear-gradient(135deg, #1a2a3a, #0d141f)',
+  },
   '정치/시사': {
     emoji: '🏛️',
     gradient: 'linear-gradient(135deg, #1e3a5f, #0f2040)',
@@ -191,6 +202,7 @@ export function getCategoryStyle(category: string): CategoryStyle {
 }
 
 const CATEGORY_IMAGE_MAP: Record<string, string> = {
+  날씨: '/category/social.svg',
   '정치/시사': '/category/politics.svg',
   지정학: '/category/geopolitics.svg',
   크립토: '/category/crypto.svg',
