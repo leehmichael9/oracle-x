@@ -42,6 +42,7 @@ const SUB_CATEGORY_TABS = [
 ] as const;
 
 type SubCategoryTab = (typeof SUB_CATEGORY_TABS)[number];
+type SubCategoryFilter = SubCategoryTab | '';
 
 function matchesSubCategoryTab(
   market: { question: string; sub_category?: string | null },
@@ -117,7 +118,7 @@ export default function Home() {
   const [markets, setMarkets] = useState<Market[]>([]);
   const [loading, setLoading] = useState(true);
   const [categoryFilter, setCategoryFilter] = useState<HomeCategoryTab>('전체');
-  const [subCategoryFilter, setSubCategoryFilter] = useState<SubCategoryTab>('전체');
+  const [subCategoryFilter, setSubCategoryFilter] = useState<SubCategoryFilter>('전체');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('active');
   const [searchQuery, setSearchQuery] = useState('');
   const [breakingOnly, setBreakingOnly] = useState(false);
@@ -253,6 +254,7 @@ export default function Home() {
               type="button"
               onClick={() => {
                 setCategoryFilter(cat);
+                setSubCategoryFilter('');
                 setBreakingOnly(false);
                 setNavTab('home');
               }}
@@ -306,6 +308,7 @@ export default function Home() {
               key={tag.keyword}
               type="button"
               onClick={() => {
+                setCategoryFilter('전체');
                 setSubCategoryFilter(tag.keyword);
                 setBreakingOnly(false);
                 setNavTab('home');
@@ -322,6 +325,7 @@ export default function Home() {
               type="button"
               onClick={() => {
                 setCategoryFilter(tag.category);
+                setSubCategoryFilter('');
                 setBreakingOnly(false);
                 setNavTab('home');
               }}
