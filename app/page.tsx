@@ -69,16 +69,16 @@ const TRENDING_KEYWORD_TAGS: {
   { label: '💥 러우전쟁', keyword: '러우전쟁' },
   { label: '🗳️ 미중간선거', keyword: '미중간선거' },
   { label: '💾 반도체', keyword: '반도체' },
+  { label: '🔥 XRP', keyword: 'XRP' },
+  { label: '⚡ BTC', keyword: 'BTC' },
 ];
 
 const TRENDING_TAGS: {
   label: string;
   category: Exclude<HomeCategoryTab, '전체' | '최신'>;
 }[] = [
-  { label: '🔥 XRP', category: '크립토' },
   { label: '🇺🇸 FOMC', category: '경제/금융' },
   { label: '🌏 지정학', category: '지정학' },
-  { label: '⚡ BTC', category: '크립토' },
   { label: '🇰🇷 한국', category: '한국 증시/경제' },
   { label: '🤖 AI', category: '테크/AI' },
   { label: '⚽ 스포츠', category: '스포츠' },
