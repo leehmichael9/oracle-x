@@ -51,9 +51,21 @@ function matchesSubCategoryTab(
   }
   return market.question.toLowerCase().includes(kw);
 }
-const TRENDING_KEYWORD_TAGS = SUB_CATEGORY_TABS.filter(
-  (tab): tab is Exclude<SubCategoryTab, '전체'> => tab !== '전체',
-);
+const TRENDING_KEYWORD_TAGS: {
+  label: string;
+  keyword: Exclude<SubCategoryTab, '전체'>;
+}[] = [
+  { label: '📈 코스피', keyword: '코스피' },
+  { label: '⚽ 2026월드컵', keyword: '2026월드컵' },
+  { label: '💥 이란전쟁', keyword: '이란전쟁' },
+  { label: '🇺🇸 트럼프', keyword: '트럼프' },
+  { label: '📊 나스닥', keyword: '나스닥' },
+  { label: '🎤 BTS', keyword: 'BTS' },
+  { label: '🌡️ 지구온난화', keyword: '지구온난화' },
+  { label: '💥 러우전쟁', keyword: '러우전쟁' },
+  { label: '🗳️ 미중간선거', keyword: '미중간선거' },
+  { label: '💾 반도체', keyword: '반도체' },
+];
 
 const TRENDING_TAGS: {
   label: string;
@@ -288,19 +300,19 @@ export default function Home() {
           ref={trendingTagsRef}
           className="w-full mt-2 flex gap-2 overflow-x-auto no-scrollbar"
         >
-          {TRENDING_KEYWORD_TAGS.map((keyword) => (
+          {TRENDING_KEYWORD_TAGS.map((tag) => (
             <button
-              key={keyword}
+              key={tag.keyword}
               type="button"
               onClick={() => {
-                setSubCategoryFilter(keyword);
+                setSubCategoryFilter(tag.keyword);
                 setBreakingOnly(false);
                 setNavTab('home');
               }}
               className="shrink-0 whitespace-nowrap px-2.5 py-1 rounded-full text-[12px]"
               style={{ background: '#1e2a3a', color: '#94a3b8' }}
             >
-              {keyword}
+              {tag.label}
             </button>
           ))}
           {TRENDING_TAGS.map((tag) => (
