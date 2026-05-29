@@ -7,6 +7,13 @@ import { MARKET_CATEGORIES, normalizeCategory } from '@/lib/categories';
 import { isMarketExpiredByEndDate, toDatetimeLocalValue } from '@/lib/market';
 import { supabase } from '@/lib/supabase';
 
+type AdminNotice = {
+  id: number | string;
+  title: string;
+  content: string;
+  created_at: string;
+};
+
 type Market = {
   id: number;
   question: string;
@@ -113,6 +120,17 @@ export default function AdminPage() {
   const [subCategoryFilter, setSubCategoryFilter] = useState<string>('전체');
   const [endDateSort, setEndDateSort] = useState<EndDateSort>('asc');
 
+  const [notices, setNotices] = useState<AdminNotice[]>([]);
+  const [noticesLoading, setNoticesLoading] = useState(true);
+  const [noticeTitle, setNoticeTitle] = useState('');
+  const [noticeContent, setNoticeContent] = useState('');
+  const [noticeFormError, setNoticeFormError] = useState<string | null>(null);
+  const [noticeFormSuccess, setNoticeFormSuccess] = useState(false);
+  const [noticeSubmitting, setNoticeSubmitting] = useState(false);
+  const [deletingNoticeId, setDeletingNoticeId] = useState<AdminNotice['id'] | null>(
+    null,
+  );
+
   const subCategoryOptions = useMemo(() => {
     if (categoryFilter === '전체') return [];
     const subs = new Set<string>();
@@ -139,9 +157,22 @@ export default function AdminPage() {
     setListLoading(false);
   }, []);
 
+  const loadNotices = useCallback(async () => {
+    setNoticesLoading(true);
+    const { data, error } = await supabase
+      .from('notices')
+      .select('id, title, content, created_at')
+      .order('created_at', { ascending: false });
+    if (!error) {
+      setNotices((data as AdminNotice[]) ?? []);
+    }
+    setNoticesLoading(false);
+  }, []);
+
   useEffect(() => {
     loadMarkets();
-  }, [loadMarkets]);
+    loadNotices();
+  }, [loadMarkets, loadNotices]);
 
   const displayMarkets = useMemo(() => {
     let list = [...markets];
@@ -312,6 +343,60 @@ export default function AdminPage() {
     }
   
     await loadMarkets();
+  }
+
+  async function handleNoticeCreate(e: React.FormEvent) {
+    e.preventDefault();
+    setNoticeFormError(null);
+    setNoticeFormSuccess(false);
+
+    const trimmedTitle = noticeTitle.trim();
+    const trimmedContent = noticeContent.trim();
+    if (!trimmedTitle) {
+      setNoticeFormError('제목을 입력해 주세요.');
+      return;
+    }
+    if (!trimmedContent) {
+      setNoticeFormError('본문을 입력해 주세요.');
+      return;
+    }
+
+    setNoticeSubmitting(true);
+    try {
+      const { error } = await supabase.from('notices').insert({
+        title: trimmedTitle,
+        content: trimmedContent,
+      });
+
+      if (error) {
+        setNoticeFormError('공지 등록에 실패했습니다: ' + error.message);
+        return;
+      }
+
+      setNoticeTitle('');
+      setNoticeContent('');
+      setNoticeFormSuccess(true);
+      await loadNotices();
+    } finally {
+      setNoticeSubmitting(false);
+    }
+  }
+
+  async function handleNoticeDelete(noticeId: AdminNotice['id']) {
+    if (!window.confirm('이 공지를 삭제하시겠습니까?')) return;
+
+    setNoticeFormError(null);
+    setDeletingNoticeId(noticeId);
+    try {
+      const { error } = await supabase.from('notices').delete().eq('id', noticeId);
+      if (error) {
+        setNoticeFormError('공지 삭제에 실패했습니다: ' + error.message);
+        return;
+      }
+      await loadNotices();
+    } finally {
+      setDeletingNoticeId(null);
+    }
   }
 
   function startImageUrlEdit(market: Market) {
@@ -1015,6 +1100,101 @@ export default function AdminPage() {
               </tbody>
             </table>
           </div>
+        )}
+      </section>
+
+      <section className="w-full max-w-6xl mb-12">
+        <h2 className="text-lg font-semibold text-white mb-4">공지사항 관리</h2>
+
+        <form
+          onSubmit={handleNoticeCreate}
+          className="bg-[#111827] border border-white/10 rounded-xl p-6 space-y-4 mb-6"
+        >
+          <div>
+            <label htmlFor="notice_title" className="block text-sm text-gray-400 mb-2">
+              제목
+            </label>
+            <input
+              id="notice_title"
+              type="text"
+              value={noticeTitle}
+              onChange={(e) => {
+                setNoticeTitle(e.target.value);
+                setNoticeFormSuccess(false);
+              }}
+              className="w-full rounded-lg bg-[#0a0f1e] border border-white/15 px-4 py-3 text-white placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50"
+              placeholder="공지 제목"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="notice_content" className="block text-sm text-gray-400 mb-2">
+              본문
+            </label>
+            <textarea
+              id="notice_content"
+              rows={5}
+              value={noticeContent}
+              onChange={(e) => {
+                setNoticeContent(e.target.value);
+                setNoticeFormSuccess(false);
+              }}
+              className="w-full rounded-lg bg-[#0a0f1e] border border-white/15 px-4 py-3 text-white placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 resize-y min-h-[120px]"
+              placeholder="공지 본문"
+            />
+          </div>
+
+          {noticeFormError ? (
+            <p className="text-sm text-red-400 bg-red-950/30 border border-red-900/50 rounded-lg px-3 py-2">
+              {noticeFormError}
+            </p>
+          ) : null}
+
+          {noticeFormSuccess ? (
+            <p className="text-center text-emerald-400 font-semibold py-2">
+              공지 등록 완료!
+            </p>
+          ) : null}
+
+          <button
+            type="submit"
+            disabled={noticeSubmitting}
+            className="w-full py-3 rounded-xl font-semibold bg-gradient-to-r from-emerald-600 to-teal-600 text-white hover:from-emerald-500 hover:to-teal-500 disabled:opacity-50 disabled:pointer-events-none transition-all shadow-lg shadow-emerald-900/30"
+          >
+            {noticeSubmitting ? '등록 중...' : '공지 등록'}
+          </button>
+        </form>
+
+        <h3 className="text-sm font-medium text-gray-400 mb-3">등록된 공지</h3>
+
+        {noticesLoading ? null : notices.length === 0 ? (
+          <p className="text-sm text-gray-500 text-center py-8 bg-[#111827] border border-white/10 rounded-xl">
+            등록된 공지가 없습니다
+          </p>
+        ) : (
+          <ul className="space-y-2">
+            {notices.map((notice) => (
+              <li
+                key={String(notice.id)}
+                className="flex items-center justify-between gap-3 bg-[#111827] border border-white/10 rounded-xl px-4 py-3"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="text-white text-sm font-medium truncate">{notice.title}</p>
+                  <p className="text-gray-500 text-xs mt-0.5 tabular-nums">
+                    {formatAdminEndDate(notice.created_at)}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleNoticeDelete(notice.id)}
+                  disabled={deletingNoticeId === notice.id}
+                  className="shrink-0 px-2 py-1 rounded text-xs font-medium border border-red-900/50 text-red-400 hover:bg-red-950/40 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {deletingNoticeId === notice.id ? '삭제 중...' : '삭제'}
+                </button>
+              </li>
+            ))}
+          </ul>
         )}
       </section>
       </div>
