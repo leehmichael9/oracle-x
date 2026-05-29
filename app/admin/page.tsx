@@ -30,8 +30,9 @@ type Market = {
 
 type AdminDisplayStatus = 'active' | 'ended' | 'settled';
 type StatusFilter = 'all' | AdminDisplayStatus;
-type EndDateSort = 'asc' | 'desc';
 type AdminTab = 'markets' | 'notices';
+
+const MARKETS_PER_PAGE = 20;
 
 const ADMIN_TABS: { value: AdminTab; label: string }[] = [
   { value: 'markets', label: '마켓 관리' },
@@ -124,7 +125,7 @@ export default function AdminPage() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('전체');
   const [subCategoryFilter, setSubCategoryFilter] = useState<string>('전체');
-  const [endDateSort, setEndDateSort] = useState<EndDateSort>('asc');
+  const [marketPage, setMarketPage] = useState(1);
 
   const [notices, setNotices] = useState<AdminNotice[]>([]);
   const [noticesLoading, setNoticesLoading] = useState(true);
@@ -196,14 +197,30 @@ export default function AdminPage() {
       list = list.filter((m) => (m.sub_category?.trim() ?? '') === subCategoryFilter);
     }
 
-    list.sort((a, b) => {
-      const ta = a.end_date ? new Date(a.end_date).getTime() : 0;
-      const tb = b.end_date ? new Date(b.end_date).getTime() : 0;
-      return endDateSort === 'asc' ? ta - tb : tb - ta;
-    });
+    list.sort((a, b) => b.id - a.id);
 
     return list;
-  }, [markets, statusFilter, categoryFilter, subCategoryFilter, endDateSort]);
+  }, [markets, statusFilter, categoryFilter, subCategoryFilter]);
+
+  const totalMarketPages = Math.max(
+    1,
+    Math.ceil(displayMarkets.length / MARKETS_PER_PAGE),
+  );
+
+  const paginatedMarkets = useMemo(() => {
+    const start = (marketPage - 1) * MARKETS_PER_PAGE;
+    return displayMarkets.slice(start, start + MARKETS_PER_PAGE);
+  }, [displayMarkets, marketPage]);
+
+  useEffect(() => {
+    setMarketPage(1);
+  }, [statusFilter, categoryFilter, subCategoryFilter]);
+
+  useEffect(() => {
+    if (marketPage > totalMarketPages) {
+      setMarketPage(totalMarketPages);
+    }
+  }, [marketPage, totalMarketPages]);
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
@@ -268,6 +285,7 @@ export default function AdminPage() {
       setIsBreaking(false);
       setImageUrl('');
       setFormSuccess(true);
+      setMarketPage(1);
       await fetch('/api/notify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -524,10 +542,6 @@ export default function AdminPage() {
     } finally {
       setSavingEndDateId(null);
     }
-  }
-
-  function toggleEndDateSort() {
-    setEndDateSort((s) => (s === 'asc' ? 'desc' : 'asc'));
   }
 
   function toggleQuestionExpand(marketId: number) {
@@ -855,25 +869,14 @@ export default function AdminPage() {
                   <th className={thClass}>세분류</th>
                   <th className={thClass}>상태</th>
                   <th className={thClass}>YES% / NO%</th>
-                  <th className={thClass}>
-                    <button
-                      type="button"
-                      onClick={toggleEndDateSort}
-                      className="inline-flex items-center gap-1 hover:text-white transition-colors"
-                    >
-                      마감일
-                      <span className="text-gray-500">
-                        {endDateSort === 'asc' ? '↑' : '↓'}
-                      </span>
-                    </button>
-                  </th>
+                  <th className={thClass}>마감일</th>
                   <th className={`${thClass} text-center`}>속보</th>
                   <th className={thClass}>결과</th>
                   <th className={`${thClass} min-w-[200px]`}>액션</th>
                 </tr>
               </thead>
               <tbody>
-                {displayMarkets.map((m, index) => {
+                {paginatedMarkets.map((m, index) => {
                   const displayStatus = getAdminMarketStatus(m);
                   const isSettled = displayStatus === 'settled';
                   const isEditingEndDate = editingEndDateId === m.id;
@@ -1130,6 +1133,30 @@ export default function AdminPage() {
             </table>
           </div>
         )}
+
+        {!listLoading && displayMarkets.length > 0 ? (
+          <div className="flex items-center justify-center gap-4 mt-4">
+            <button
+              type="button"
+              disabled={marketPage <= 1}
+              onClick={() => setMarketPage((p) => p - 1)}
+              className="px-3 py-1.5 rounded text-xs font-medium border border-white/15 text-gray-300 hover:bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              이전
+            </button>
+            <span className="text-sm text-gray-400 tabular-nums">
+              {marketPage} / {totalMarketPages}
+            </span>
+            <button
+              type="button"
+              disabled={marketPage >= totalMarketPages}
+              onClick={() => setMarketPage((p) => p + 1)}
+              className="px-3 py-1.5 rounded text-xs font-medium border border-white/15 text-gray-300 hover:bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              다음
+            </button>
+          </div>
+        ) : null}
       </section>
       </>
       ) : null}
