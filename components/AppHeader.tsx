@@ -103,15 +103,12 @@ export function AppHeader() {
           >
             🏆
           </Link>
-          <Link href="/profile" aria-label="내 정보" className={iconButtonClass}>
-            👤
-          </Link>
           <Link
             href="/notice"
             aria-label="공지사항"
-            className={`relative ${iconButtonClass}`}
+            className={`relative ${iconButtonClass} text-gray-300`}
           >
-            🔔
+            <span aria-hidden>🔔</span>
             {hasUnreadNotice ? (
               <span
                 className="absolute top-1 right-1 h-2 w-2 rounded-full bg-red-500 ring-2 ring-[#111827]"
