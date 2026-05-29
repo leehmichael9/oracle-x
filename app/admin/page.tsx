@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppHeader } from '@/components/AppHeader';
 import { MARKET_CATEGORIES, normalizeCategory } from '@/lib/categories';
 import { isMarketExpiredByEndDate, toDatetimeLocalValue } from '@/lib/market';
+import { parseTagsInput } from '@/lib/market-tags';
 import { supabase } from '@/lib/supabase';
 
 type AdminNotice = {
@@ -26,6 +27,7 @@ type Market = {
   end_date: string | null;
   is_breaking: boolean;
   image_url: string | null;
+  tags: string[] | null;
 };
 
 type AdminDisplayStatus = 'active' | 'ended' | 'settled';
@@ -104,6 +106,7 @@ export default function AdminPage() {
   const [endDate, setEndDate] = useState('');
   const [isBreaking, setIsBreaking] = useState(false);
   const [imageUrl, setImageUrl] = useState('');
+  const [tagsInput, setTagsInput] = useState('');
   const [editingEndDateId, setEditingEndDateId] = useState<number | null>(null);
   const [editEndDate, setEditEndDate] = useState('');
   const [savingEndDateId, setSavingEndDateId] = useState<number | null>(null);
@@ -256,23 +259,29 @@ export default function AdminPage() {
     }
     const endDateIso = parsedEndDate.toISOString();
   
+    const tags = parseTagsInput(tagsInput);
+
     setSubmitting(true);
     try {
-      const { error } = await supabase.from('markets').insert({
-        question: trimmedQuestion,
-        category,
-        sub_category: subCategory.trim() || null,
-        yes_percent: yes,
-        no_percent: no,
-        status: 'active',
-        result: null,
-        end_date: endDateIso,
-        is_breaking: isBreaking,
-        image_url: imageUrl.trim() || null,
+      const res = await fetch('/api/markets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          question: trimmedQuestion,
+          category,
+          sub_category: subCategory.trim() || null,
+          yes_percent: yes,
+          no_percent: no,
+          end_date: endDateIso,
+          is_breaking: isBreaking,
+          image_url: imageUrl.trim() || null,
+          tags: tags.length > 0 ? tags : null,
+        }),
       });
-  
-      if (error) {
-        setFormError(error.message ?? '마켓 생성에 실패했습니다.');
+      const data = await res.json();
+
+      if (!res.ok || !data.ok) {
+        setFormError(data.error ?? '마켓 생성에 실패했습니다.');
         return;
       }
   
@@ -284,6 +293,7 @@ export default function AdminPage() {
       setEndDate('');
       setIsBreaking(false);
       setImageUrl('');
+      setTagsInput('');
       setFormSuccess(true);
       setMarketPage(1);
       await fetch('/api/notify', {
@@ -668,6 +678,23 @@ export default function AdminPage() {
                 setFormSuccess(false);
               }}
               placeholder="세분류 입력 (예: XRP, 국내정치, FOMC·금리)"
+              className="w-full rounded-lg bg-[#0a0f1e] border border-white/15 px-4 py-3 text-white placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="tags" className="block text-sm text-gray-400 mb-2">
+              태그 <span className="text-gray-600">(선택)</span>
+            </label>
+            <input
+              id="tags"
+              type="text"
+              value={tagsInput}
+              onChange={(e) => {
+                setTagsInput(e.target.value);
+                setFormSuccess(false);
+              }}
+              placeholder="XRP, SEC, 소송 — 쉼표로 구분"
               className="w-full rounded-lg bg-[#0a0f1e] border border-white/15 px-4 py-3 text-white placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50"
             />
           </div>

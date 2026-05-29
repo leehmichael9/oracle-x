@@ -1,6 +1,7 @@
 'use client';
 import { AppFooter } from '@/components/AppFooter';
 import { AppHeader } from '@/components/AppHeader';
+import { MarketTags } from '@/components/MarketTags';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -96,6 +97,7 @@ type Market = {
   is_breaking: boolean | null;
   image_url: string | null;
   sub_category: string | null;
+  tags: string[] | null;
 };
 
 // ─── 유틸 함수 ───────────────────────────────────────────────────
@@ -455,6 +457,8 @@ export default function Home() {
                     NO {m.no_percent}%
                   </YesNoButton>
                 </YesNoButtonGroup>
+
+                <MarketTags tags={m.tags} className="mt-3" />
               </div>
             );
           })}

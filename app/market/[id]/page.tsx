@@ -5,6 +5,7 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { AppHeader } from '@/components/AppHeader';
 import { BottomNav, type BottomNavTab } from '@/components/BottomNav';
+import { MarketTags } from '@/components/MarketTags';
 import { YesNoButton, YesNoButtonGroup } from '@/components/YesNoButton';
 import {
   BET_SUBMIT_BG,
@@ -31,6 +32,7 @@ type Market = {
   status: string;
   result: 'YES' | 'NO' | null;
   end_date: string | null;
+  tags: string[] | null;
 };
 
 type Choice = 'YES' | 'NO';
@@ -256,6 +258,8 @@ export default function MarketBetPage() {
         <h1 className="text-xl font-semibold text-white text-left leading-snug">
           {market.question}
         </h1>
+
+        <MarketTags tags={market.tags} />
 
         {/* 확률 진행 바 */}
         <div className="w-full">
