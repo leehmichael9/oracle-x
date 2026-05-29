@@ -31,6 +31,12 @@ type Market = {
 type AdminDisplayStatus = 'active' | 'ended' | 'settled';
 type StatusFilter = 'all' | AdminDisplayStatus;
 type EndDateSort = 'asc' | 'desc';
+type AdminTab = 'markets' | 'notices';
+
+const ADMIN_TABS: { value: AdminTab; label: string }[] = [
+  { value: 'markets', label: '마켓 관리' },
+  { value: 'notices', label: '공지사항 관리' },
+];
 
 function getAdminMarketStatus(m: Market): AdminDisplayStatus {
   if (m.status === 'resolved') return 'settled';
@@ -130,6 +136,7 @@ export default function AdminPage() {
   const [deletingNoticeId, setDeletingNoticeId] = useState<AdminNotice['id'] | null>(
     null,
   );
+  const [adminTab, setAdminTab] = useState<AdminTab>('markets');
 
   const subCategoryOptions = useMemo(() => {
     if (categoryFilter === '전체') return [];
@@ -560,14 +567,36 @@ export default function AdminPage() {
       <p className="text-amber-400 text-sm font-medium tracking-wide mb-2">
         관리자 전용
       </p>
-      <h1 className="text-3xl font-bold text-white mb-2">마켓 관리</h1>
+      <h1 className="text-3xl font-bold text-white mb-2">관리자</h1>
       <Link
         href="/"
-        className="text-sm text-gray-400 hover:text-white transition-colors mb-10"
+        className="text-sm text-gray-400 hover:text-white transition-colors mb-6"
       >
         ← 홈으로
       </Link>
 
+      <div className="w-full flex gap-2 mb-8">
+        {ADMIN_TABS.map(({ value, label }) => (
+          <button
+            key={value}
+            type="button"
+            onClick={() => setAdminTab(value)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all border whitespace-nowrap shrink-0 ${
+              adminTab === value
+                ? 'text-white border-[#34d399]/40'
+                : 'bg-[#111827] text-gray-400 border-white/10 hover:text-white hover:border-white/20'
+            }`}
+            style={
+              adminTab === value ? { backgroundColor: 'rgba(52,211,153,0.2)' } : undefined
+            }
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {adminTab === 'markets' ? (
+      <>
       <section className="w-full mb-12">
         <h2 className="text-lg font-semibold text-white mb-4">마켓 생성</h2>
         <form
@@ -1102,7 +1131,10 @@ export default function AdminPage() {
           </div>
         )}
       </section>
+      </>
+      ) : null}
 
+      {adminTab === 'notices' ? (
       <section className="w-full max-w-6xl mb-12">
         <h2 className="text-lg font-semibold text-white mb-4">공지사항 관리</h2>
 
@@ -1197,6 +1229,7 @@ export default function AdminPage() {
           </ul>
         )}
       </section>
+      ) : null}
       </div>
     </div>
   );
