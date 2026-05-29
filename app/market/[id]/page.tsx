@@ -1,9 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { useParams, useSearchParams } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { AppHeader } from '@/components/AppHeader';
+import { BottomNav, type BottomNavTab } from '@/components/BottomNav';
 import { YesNoButton, YesNoButtonGroup } from '@/components/YesNoButton';
 import {
   BET_SUBMIT_BG,
@@ -36,8 +37,10 @@ type Choice = 'YES' | 'NO';
 
 // ─── 메인 컴포넌트 ───────────────────────────────────────────────
 export default function MarketBetPage() {
+  const router = useRouter();
   const params = useParams();
   const searchParams = useSearchParams();
+  const navTab: BottomNavTab = 'home';
   const idParam = params.id as string;
   const { userId } = useTelegramUser();
 
@@ -175,13 +178,27 @@ export default function MarketBetPage() {
   }
 
   // ─── 로딩 / 에러 상태 ────────────────────────────────────────
+  const bottomNav = (
+    <BottomNav
+      activeTab={navTab}
+      onHome={() => router.push('/')}
+      onSearch={() => router.push('/')}
+      onBreaking={() => router.push('/')}
+      onProfile={() => router.push('/profile')}
+    />
+  );
+
   if (marketLoading) {
-    return <div className="min-h-screen bg-[#0a0f1e]" />;
+    return (
+      <div className="min-h-screen bg-[#0a0f1e] pb-20">
+        {bottomNav}
+      </div>
+    );
   }
 
   if (!market) {
     return (
-      <div className="min-h-screen bg-[#0a0f1e] flex flex-col items-center justify-center gap-4 px-4">
+      <div className="min-h-screen bg-[#0a0f1e] flex flex-col items-center justify-center gap-4 px-4 pb-20">
         <p className="text-gray-300">마켓을 찾을 수 없습니다.</p>
         <Link
           href="/"
@@ -190,6 +207,7 @@ export default function MarketBetPage() {
         >
           목록으로
         </Link>
+        {bottomNav}
       </div>
     );
   }
@@ -201,7 +219,7 @@ export default function MarketBetPage() {
 
   // ─── 렌더 ────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-[#0a0f1e] flex flex-col items-center pb-4 px-4">
+    <div className="min-h-screen bg-[#0a0f1e] flex flex-col items-center pb-20 px-4">
       <div
         ref={headerRef}
         className="fixed top-0 left-0 right-0 z-50 w-full flex justify-center bg-[#0a0f1e] px-4 py-2"
@@ -350,6 +368,8 @@ export default function MarketBetPage() {
         )}
       </div>
       </div>
+
+      {bottomNav}
     </div>
   );
 }

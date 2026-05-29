@@ -1,8 +1,10 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppHeader } from '@/components/AppHeader';
+import { BottomNav, type BottomNavTab } from '@/components/BottomNav';
 import { BET_SUBMIT_BG, YES_COLOR } from '@/lib/categories';
 import { useTelegramUser } from '@/lib/useTelegramUser';
 
@@ -55,6 +57,8 @@ function timerBarColor(secondsLeft: number): string {
 }
 
 export default function QuizPage() {
+  const router = useRouter();
+  const navTab: BottomNavTab = 'quiz';
   const { loading: userLoading } = useTelegramUser();
 
   const [status, setStatus] = useState<ScreenStatus>('idle');
@@ -290,7 +294,7 @@ export default function QuizPage() {
   const topPadding = headerHeight + subHeaderHeight;
 
   return (
-    <div className="min-h-screen bg-[#0a0f1e] flex flex-col items-center px-4 pb-12">
+    <div className="min-h-screen bg-[#0a0f1e] flex flex-col items-center px-4 pb-20">
       <div
         ref={headerRef}
         className="fixed top-0 left-0 right-0 z-50 w-full flex justify-center bg-[#0a0f1e] px-4 py-2"
@@ -485,6 +489,14 @@ export default function QuizPage() {
           </div>
         ) : null}
       </div>
+
+      <BottomNav
+        activeTab={navTab}
+        onHome={() => router.push('/')}
+        onSearch={() => router.push('/')}
+        onBreaking={() => router.push('/')}
+        onProfile={() => router.push('/profile')}
+      />
     </div>
   );
 }
