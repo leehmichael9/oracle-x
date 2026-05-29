@@ -1,5 +1,6 @@
 'use client';
 
+import { Bell } from 'lucide-react';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
@@ -106,9 +107,9 @@ export function AppHeader() {
           <Link
             href="/notice"
             aria-label="공지사항"
-            className={`relative ${iconButtonClass} text-gray-300`}
+            className={`relative ${iconButtonClass} text-gray-300 hover:text-white`}
           >
-            <span aria-hidden>🔔</span>
+            <Bell className="h-5 w-5 shrink-0" strokeWidth={2} aria-hidden />
             {hasUnreadNotice ? (
               <span
                 className="absolute top-1 right-1 h-2 w-2 rounded-full bg-red-500 ring-2 ring-[#111827]"
