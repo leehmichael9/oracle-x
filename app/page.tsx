@@ -27,22 +27,7 @@ import { useTelegramUser } from '@/lib/useTelegramUser';
 
 const NEW_MARKET_MS = 72 * 60 * 60 * 1000;
 
-const SUB_CATEGORY_TABS = [
-  '전체',
-  '코스피',
-  '2026월드컵',
-  '이란전쟁',
-  '트럼프',
-  '나스닥',
-  'BTS',
-  '지구온난화',
-  '러우전쟁',
-  '미중간선거',
-  '반도체',
-] as const;
-
-type SubCategoryTab = (typeof SUB_CATEGORY_TABS)[number];
-type SubCategoryFilter = SubCategoryTab | '';
+type SubCategoryFilter = string;
 
 function matchesSubCategoryTab(
   market: { question: string; sub_category?: string | null },
@@ -57,7 +42,7 @@ function matchesSubCategoryTab(
 }
 const TRENDING_KEYWORD_TAGS: {
   label: string;
-  keyword: Exclude<SubCategoryTab, '전체'>;
+  keyword: string;
 }[] = [
   { label: '📈 코스피', keyword: '코스피' },
   { label: '⚽ 2026월드컵', keyword: '2026월드컵' },
